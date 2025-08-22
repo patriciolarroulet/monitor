@@ -520,6 +520,7 @@ while True:
             write_atomic_json(frozen_out, FX_JSON)
             print(f"🧊 Freeze activo: fx.json congelado | market_date={frozen_out.get('market_date')}")
             time.sleep(300)
+            continue
         else:
             # === REEMPLAZÁ ESTAS 3 LÍNEAS CON TU CÁLCULO REAL ===
             fx_payload = compute_fx_from_bonds(dataframes, resultados_bcra)  # ← tu función real
