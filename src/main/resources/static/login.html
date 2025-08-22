@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Emberlink • Acceso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#121212; --card:#151515; --text:#FFFFFF; --muted:#C5CBD2; --border:#303030;
+      --brand:#0066CC;
+    }
+    html,body{background:var(--bg);color:var(--text);}
+    .card{background:var(--card);border:1px solid var(--border);}
+    .muted{color:var(--muted);}
+    .btn{background:#0F172A;border:1px solid var(--border);color:#fff;}
+    .btn:hover{background:#1F2937;}
+    .btn-primary{background:var(--brand);color:#fff;}
+    .btn-primary:hover{filter:brightness(1.05);}
+    input{background:#0b0b0b;color:#fff;border:1px solid var(--border);}
+  </style>
+</head>
+<body>
+  <div class="min-h-screen flex items-center justify-center px-5">
+    <div class="w-full max-w-md space-y-6">
+      <div class="text-center space-y-2">
+        <img src="/brand/logo-emberlink.png" alt="Emberlink" class="mx-auto" style="height:80px" width="220" height="56" loading="eager" decoding="sync">
+        <h1 class="text-2xl font-semibold">Acceso a Emberlink</h1>
+        <p class="muted text-sm">Ingresá con tu usuario y contraseña</p>
+      </div>
+
+      <form id="loginForm" class="card rounded-2xl p-6 space-y-4">
+        <div>
+          <label class="block text-sm mb-1 muted">Usuario</label>
+          <input id="user" type="text" class="w-full rounded-xl p-3" autocomplete="username" required>
+        </div>
+        <div>
+          <label class="block text-sm mb-1 muted">Contraseña</label>
+          <div class="relative">
+            <input id="pass" type="password" class="w-full rounded-xl p-3 pr-10" autocomplete="current-password" required>
+            <!-- Botón de mostrar/ocultar -->
+            <button type="button" id="togglePass" class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-white">
+              👁️
+            </button>
+          </div>
+        </div>
+
+        <button class="w-full btn-primary rounded-xl p-3 font-medium" type="submit">Ingresar</button>
+
+        <p id="msg" class="hidden text-center text-sm text-red-400">Usuario o contraseña inválidos.</p>
+      </form>
+
+      <p class="muted text-xs text-center">© <span id="year"></span> Emberlink</p>
+    </div>
+  </div>
+
+  <script>
+    // Año en footer
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Toggle mostrar/ocultar contraseña
+    const passInput = document.getElementById('pass');
+    const toggleBtn = document.getElementById('togglePass');
+
+    toggleBtn.addEventListener('click', () => {
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+        toggleBtn.textContent = '🙈'; // cambia icono
+      } else {
+        passInput.type = 'password';
+        toggleBtn.textContent = '👁️';
+      }
+    });
+
+    // Login simple en el cliente (NO apto producción)
+    const OK_USER = 'Emberlink';
+    const OK_PASS = 'Consultora_1234';
+
+    const form = document.getElementById('loginForm');
+    const msg  = document.getElementById('msg');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const u = document.getElementById('user').value.trim();
+      const p = passInput.value;
+      if (u === OK_USER && p === OK_PASS) {
+        
+        // marcamos sesión en storage por 8 horas
+        const until = Date.now() + 8*60*60*1000;
+        sessionStorage.setItem('emberAuth', JSON.stringify({u, until}));
+        // redirige al home
+        window.location.href = '/';
+      } else {
+        msg.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

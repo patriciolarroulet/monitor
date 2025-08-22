@@ -1,0 +1,1 @@
+{"mep":1323.26,"ccl":1322.15,"oficial":1309.25,"ts_utc":"2025-08-21T20:58:10.905321+00:00","sources":{"mep":"MEP = close(AL30)/close(AL30D)","ccl":"CCL = close(AL30)/close(AL30C)","oficial":"BCRA A3500"},"mep_var_pct":0.0,"ccl_var_pct":0.0,"oficial_var_pct":0.0,"frozen":false,"market_date":"2025-08-21","last_update":"2025-08-21T17:58:10.908677-03:00"}

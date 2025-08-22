@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Lecaps y Boncaps</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- UI -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <!-- XLSX -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --ember-blue:   #0066CC;
+      --ember-cyan:   #00AEEF;
+      --ember-bg:     #121212;
+      --ember-text:   #FFFFFF;
+      --ember-muted:  #C5CBD2;
+      --ember-grid:   #2E2E2E;
+      --ember-card:   #151515;
+      --ember-border: #303030;
+
+      --point:        #FFFFFF;
+      --point-border: #00AEEF;
+      --reg-line:     #0066CC;
+    }
+    html, body { background: var(--ember-bg); color: var(--ember-text); }
+    .card { background: var(--ember-card); border: 1px solid var(--ember-border); }
+    .muted { color: var(--ember-muted); }
+    .btn { background: #0F172A; border: 1px solid var(--ember-border); color: var(--ember-text); }
+    .btn:hover { background: #1F2937; }
+    .btn-primary { background: var(--ember-blue); color: white; }
+    .btn-primary:hover { filter: brightness(1.05); }
+    input, select { background: #0b0b0b; color: var(--ember-text); border: 1px solid var(--ember-border); }
+    table th, table td { border-color: var(--ember-border); }
+    thead.sticky th { position: sticky; top: 0; background: #0d0d0d; z-index: 1; }
+  
+    /* ===== FUTUROS: estilos y anchos ===== */
+  .fut-card { background: var(--ember-card); border: 1px solid var(--ember-border); }
+  .fut-table { width: 100%; border-collapse: collapse; font-size: .86rem; min-width: 520px; }
+  .fut-table th, .fut-table td { border: 1px solid #2a2a2a; padding: 8px; }
+  .fut-table th { background:#0f172a; color:#e5e7eb; position: sticky; top: 0; z-index: 1; }
+  .fut-table td { background:#0b1220; color:#e5e7eb; }
+  .fut-num { text-align: right; white-space: nowrap; }
+
+  /* Distribución de columnas: damos menos espacio a TNA y TIR */
+  .fut-col-mes   { width: 34%; text-align: left; }
+  .fut-col-rofex { width: 32%; }
+  .fut-col-tna   { width: 17%; }
+  .fut-col-tir   { width: 17%; }
+
+  /* Altura del panel de la tabla con scroll interno para “media pantalla” */
+  .fut-panel { max-height: 52vh; overflow: auto; border-radius: 1rem; }
+   /* ==== FUTUROS: overrides fuertes ==== */
+#futuros-rofex .fut-card{background:var(--ember-card)!important;border:1px solid var(--ember-border)!important}
+
+/* tabla */
+#futuros-table{width:100%;border-collapse:collapse;font-size:.86rem;min-width:520px}
+#futuros-table th,#futuros-table td{border:1px solid #2a2a2a!important;padding:8px!important}
+#futuros-table th{background:#0f172a!important;color:#e5e7eb!important;position:sticky;top:0;z-index:1}
+#futuros-table td{background:#0b0b0b!important;color:#e5e7eb!important}
+
+/* números compactos y alineados */
+#futuros-table .fut-num{ text-align:right!important; white-space:nowrap!important; font-variant-numeric:tabular-nums }
+
+/* anchos: TNA/TIR angostos */
+#futuros-table .fut-col-mes{width:36%!important;text-align:left!important}
+#futuros-table .fut-col-rofex{width:32%!important}
+#futuros-table .fut-col-tna{width:16%!important}
+#futuros-table .fut-col-tir{width:16%!important}
+
+/* panel con scroll (media pantalla) */
+#futuros-rofex .fut-panel{max-height:52vh;overflow:auto;border-radius:1rem}
+
+/* Indicador de estado de mercado */
+.market-status { display:inline-flex; align-items:center; gap:8px; font-size:12px; color:#9aa; }
+.market-status .dot { display:inline-block; width:8px; height:8px; border-radius:50%; }
+.market-status.open  .dot { background:#13d18e; box-shadow:0 0 0 0 rgba(19,209,142,.5); animation:pulse-open 1.8s infinite; }
+.market-status.closed .dot { background:#ff5a5a; box-shadow:0 0 0 0 rgba(255,90,90,.5); animation:pulse-closed 1.8s infinite; }
+@keyframes pulse-open   { 0%{box-shadow:0 0 0 0 rgba(19,209,142,.5);} 70%{box-shadow:0 0 0 8px rgba(19,209,142,0);} 100%{box-shadow:0 0 0 0 rgba(19,209,142,0);} }
+@keyframes pulse-closed { 0%{box-shadow:0 0 0 0 rgba(255,90,90,.5);} 70%{box-shadow:0 0 0 8px rgba(255,90,90,0);} 100%{box-shadow:0 0 0 0 rgba(255,90,90,0);} }
+
+</style>
+</head>
+<body class="p-5">
+  <div class="max-w-7xl mx-auto space-y-5">
+    <!-- Header -->
+    <header class="flex items-center justify-between">
+  <h1 class="text-2xl md:text-3xl font-semibold">Lecaps y Boncaps</h1>
+  <div class="flex items-center gap-3">
+    <img src="/brand/logo-emberlink.png" alt="Emberlink" class="w-auto" style="height:56px" width="168" height="56">
+    <!-- NUEVO -->
+    <div class="flex items-center gap-2">
+      <button id="btnRefresh" class="btn px-3 py-2 rounded-xl">Actualizar</button>
+      <label class="inline-flex items-center gap-2 text-sm">
+        <input id="chkAuto" type="checkbox" class="scale-125">
+        <span class="muted">Auto</span>
+      </label>
+    </div>
+  </div>
+</header>
+    
+    <!-- Fechas -->
+    <section class="grid sm:grid-cols-3 gap-4">
+      <div class="card rounded-2xl p-4">
+        <div class="text-xs muted">Fecha</div>
+        <div id="fechaInput" class="text-xl font-semibold">—</div>
+      </div>
+
+      <div class="card rounded-2xl p-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs muted">Hora</span>
+          <!-- Indicador de mercado dentro de la tarjeta -->
+          <span class="market-status text-xs muted flex items-center gap-2 whitespace-nowrap"
+                id="market-status" aria-live="polite" title="Estado de mercado">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="market-status-text">—</span>
+          </span>
+        </div>
+        <div id="horaInput" class="text-xl font-semibold mt-1">—</div>
+      </div>
+
+      <div class="card rounded-2xl p-4">
+        <div class="text-xs muted">Fecha de liquidación</div>
+        <div id="fechaLiq" class="text-xl font-semibold">—</div>
+      </div>
+    </section>
+
+
+    <!-- Filtros y export -->
+    <section class="grid md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm mb-1 muted">Filtrar por Ticker</label>
+        <input id="fTicker" type="text" placeholder="Ej: S15G5" class="w-full rounded-xl p-2" />
+      </div>
+      <div>
+        <label class="block text-sm mb-1 muted">Mín. Días al Vto</label>
+        <input id="fMinDias" type="number" min="0" class="w-full rounded-xl p-2" />
+      </div>
+      <div class="flex items-end gap-2">
+        <button id="btnApply" class="px-4 py-2 rounded-2xl btn-primary">Aplicar</button>
+        <button id="btnClear" class="px-4 py-2 rounded-2xl btn">Limpiar</button>
+        <button id="btnCSV"  class="px-4 py-2 rounded-2xl btn" disabled>Exportar CSV</button>
+        <button id="btnXLSX" class="px-4 py-2 rounded-2xl btn" disabled>Exportar XLSX</button>
+      </div>
+    </section>
+
+    <!-- Layout: gráfico (izquierda) + calculadora (derecha) -->
+    <section class="grid lg:grid-cols-2 gap-4">
+      <!-- Gráfico -->
+      <div class="card rounded-2xl p-4">
+        <div class="h-96">
+          <canvas id="chart"></canvas>
+        </div>
+        <p class="text-xs muted mt-2">Base de cálculo actual/365.</p>
+   
+    <!-- === CAUCIONES (mini, traspuesto, dark) — justo debajo de "Base de cálculo actual/365" === -->
+<div id="cauciones-mini" style="margin-top:6px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+    <div style="font-size:.92rem;font-weight:600;color:#e5e7eb;">Cauciones</div>
+    <div id="cauciones-mini-upd" style="font-size:.78rem;color:#9aa3af;">Inicial (estático)</div>
+    <!-- sin botón propio; se engancha al "Actualizar" general -->
+  </div>
+
+  <div style="overflow:auto;">
+    <table id="cauciones-mini-table" style="width:max-content;border-collapse:collapse;font-size:.84rem;">
+      <thead><tr id="cauciones-mini-head"></tr></thead>
+      <tbody><tr id="cauciones-mini-body"></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  /* Dark compacto alineado al resto */
+  #cauciones-mini-table th{
+    padding:4px 8px;border:1px solid #2a2a2a;background:#0f172a;color:#e5e7eb;
+  }
+  #cauciones-mini-table td{
+    padding:4px 8px;border:1px solid #2a2a2a;background:#0b1220;color:#e5e7eb;text-align:right;
+  }
+  #cauciones-mini-table td:first-child,
+  #cauciones-mini-table th:first-child{ text-align:left; }
+</style>
+
+<script>
+  // ===== Utilidades de fecha/hora (24h con segundos) =====
+  function formatARDateHMS(ts) {
+    const d = new Date(ts);
+    const fecha = d.toLocaleDateString('es-AR');    // DD/MM/AAAA
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${fecha}, ${hh}:${mm}:${ss}`;           // HH:MM:SS
+  }
+  function setCaucionesUpdated(ts) {
+    const el = document.getElementById('cauciones-mini-upd');
+    if (el) el.textContent = `Actualizado: ${formatARDateHMS(ts)}`;
+  }
+
+  // Mostrar hora local al cargar
+  setCaucionesUpdated(Date.now());
+
+  // ===== Render de la tabla y refresco =====
+  (function(){
+    const API = '/api/externals/cauciones'; // si no existe, usamos fallback
+    const DAYS_ORDER = ["1 días","7 días","14 días","21 días","28 días","35 días","42 días"];
+
+    const FALLBACK = [
+      { plazo:"1 días",  tna:"n/d"},
+      { plazo:"7 días",  tna:"n/d"},
+      { plazo:"14 días", tna:"n/d"},
+      { plazo:"21 días", tna:"n/d"},
+      { plazo:"28 días", tna:"n/d"},
+      { plazo:"35 días", tna:"n/d"},
+      { plazo:"42 días", tna:"n/d"}
+    ];
+
+    const head = document.getElementById('cauciones-mini-head');
+    const body = document.getElementById('cauciones-mini-body');
+    const upd  = document.getElementById('cauciones-mini-upd');
+
+    function toNumber(v){ return Number(String(v).replace(/\./g,'').replace(',', '.')); }
+    function fmtPct(n){
+      const x = typeof n === 'number' ? n : toNumber(n);
+      if (!Number.isFinite(x)) return String(n) + '%'; // 👈 sin espacio
+      return new Intl.NumberFormat('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(x) + '%'; // 👈 sin espacio
+    }
+
+    function th(txt){ const el = document.createElement('th'); el.textContent = txt; return el; }
+    function td(txt, alignRight){
+      const el = document.createElement('td'); el.textContent = txt;
+      if (alignRight) el.style.textAlign = 'right';
+      return el;
+    }
+
+    function render(rows){
+      head.innerHTML = '';
+      body.innerHTML = '';
+      head.appendChild(th("Días"));        // etiqueta columna
+      body.appendChild(td("TNA", false));  // etiqueta fila
+
+      for (const d of DAYS_ORDER){
+        head.appendChild(th(d));
+        const r = rows.find(x => (x.plazo||'').toLowerCase() === d.toLowerCase());
+        body.appendChild(td(fmtPct(r?.tna ?? ""), true));
+      }
+    }
+
+    async function refreshCaucionesMini(){
+      try{
+        const res = await fetch(API, { cache:'no-store' });
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const data = await res.json();
+
+        if (!Array.isArray(data) || !data.length){
+          render(FALLBACK);
+          upd.textContent = 'Sin datos (fallback)';
+          return;
+        }
+
+        render(data);
+        setCaucionesUpdated(Date.now());   // 👉 usa el formato correcto
+      }catch(e){
+        render(FALLBACK);
+        // dejamos "Inicial (estático)" si falla
+      }
+    }
+
+    // Exponer para refresh global
+    window.refreshCaucionesMini = refreshCaucionesMini;
+
+    // Enganche automático al botón “Actualizar” general
+    function hookGlobalRefresh(){
+      const candidates = Array.from(document.querySelectorAll('button, a'))
+        .filter(el => el.offsetParent !== null)
+        .filter(el => /\bactualizar\b/i.test(el.textContent || ''));
+      candidates.forEach(el=>{
+        if(!el.dataset.caucionesHook){
+          el.addEventListener('click', ()=> { try{ window.refreshCaucionesMini(); }catch{} }, { passive:true });
+          el.dataset.caucionesHook = '1';
+        }
+      });
+    }
+    hookGlobalRefresh();
+    const mo = new MutationObserver(hookGlobalRefresh);
+    mo.observe(document.body, { childList:true, subtree:true });
+
+    // Primera carga + refresco cada 60s
+    render(FALLBACK);
+    refreshCaucionesMini();
+    setInterval(refreshCaucionesMini, 60000);
+  })();
+</script>
+      </div>
+
+        
+      <!-- Calculadora fija -->
+      <div class="card rounded-2xl p-4">
+        <h2 class="text-xl font-semibold mb-4">Calculadora Lecaps/Boncaps</h2>
+
+        <!-- Selección de instrumento -->
+        <div class="grid md:grid-cols-4 gap-4 items-end">
+          <div class="md:col-span-2">
+            <label class="block text-sm mb-1 muted">Ticker</label>
+            <select id="calcTicker" class="w-full rounded-xl p-2"></select>
+          </div>
+          <div>
+            <label class="block text-sm mb-1 muted">Días al vencimiento</label>
+            <input id="calcDias" class="w-full rounded-xl p-2">
+          </div>
+          <div>
+            <label class="block text-sm mb-1 muted">Valor final (VF)</label>
+            <input id="calcVF" class="w-full rounded-xl p-2" disabled>
+          </div>
+        </div>
+
+        <!-- Comisión y bruto/neto -->
+        <div class="grid md:grid-cols-3 gap-4 mt-4">
+          <div>
+            <label class="block text-sm mb-1 muted">Comisión (%)</label>
+            <input id="calcComision" type="number" step="0.01" class="w-full rounded-xl p-2" placeholder="ej: 0.50">
+          </div>
+          <div class="md:col-span-2 flex items-end gap-4">
+            <label class="inline-flex items-center gap-2">
+              <input type="checkbox" id="calcNeto" class="scale-125">
+              <span class="muted text-sm">Usar precio <b>neto</b> (aplica comisión)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Modo de cálculo -->
+        <div class="mt-4 grid md:grid-cols-2 gap-4">
+          <div class="card rounded-xl p-4">
+            <div class="flex items-center gap-3 mb-3">
+              <input type="radio" id="modeFromPrice" name="calcMode" class="scale-125" checked>
+              <label for="modeFromPrice" class="font-medium">Desde <b>Precio</b> → tasas</label>
+            </div>
+            <label class="block text-sm mb-1 muted">Precio</label>
+            <input id="inPrecio" type="number" step="0.001" class="w-full rounded-xl p-2">
+          </div>
+
+          <div class="card rounded-xl p-4">
+            <div class="flex items-center gap-3 mb-3">
+              <input type="radio" id="modeFromRate" name="calcMode" class="scale-125">
+              <label for="modeFromRate" class="font-medium">Desde <b>Tasa</b> → precio</label>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-sm mb-1 muted">Tipo</label>
+                <select id="inTipoTasa" class="w-full rounded-xl p-2">
+                  <option value="TEM">TEM</option>
+                  <option value="TNA">TNA s.</option>
+                  <option value="TEA">TEA</option>
+                </select>
+              </div>
+              <div class="col-span-2">
+                <label class="block text-sm mb-1 muted">Valor (%)</label>
+                <input id="inValorTasa" type="number" step="0.01" class="w-full rounded-xl p-2" placeholder="ej: 4.25">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="mt-4 flex items-center justify-between">
+          <div class="text-sm muted">Base actual/365. Rendimiento simple entre fecha de liq. y vto.</div>
+          <div class="flex gap-2">
+            <button id="calcClear" class="btn px-4 py-2 rounded-xl">Limpiar</button>
+            <button id="calcRun" class="btn-primary px-4 py-2 rounded-xl">Calcular</button>
+          </div>
+        </div>
+
+        <!-- Resultados -->
+        <div class="mt-4 grid md:grid-cols-4 gap-4">
+          <div class="card rounded-xl p-4">
+            <div class="text-xs muted">Precio</div>
+            <div id="outPrecio" class="text-lg font-semibold">—</div>
+          </div>
+          <div class="card rounded-xl p-4">
+            <div class="text-xs muted">TEM (%)</div>
+            <div id="outTEM" class="text-lg font-semibold">—</div>
+          </div>
+          <div class="card rounded-xl p-4">
+            <div class="text-xs muted">TNA s. (%)</div>
+            <div id="outTNA" class="text-lg font-semibold">—</div>
+          </div>
+          <div class="card rounded-xl p-4">
+            <div class="text-xs muted">TEA (%)</div>
+            <div id="outTEA" class="text-lg font-semibold">—</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Tabla (monitor) -->
+<section class="card rounded-2xl p-4">
+  <!-- Título -->
+  <h2 class="text-xl font-semibold mb-3">Monitor de mercado secundario – ByMA t+1</h2>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-black/40 sticky">
+        <tr>
+          <th class="border px-3 py-2 text-left">Ticker</th>
+          <th class="border px-3 py-2 text-left">Vencimiento</th>
+          <th class="border px-3 py-2 text-right">Días</th>
+          <th class="border px-3 py-2 text-right">Precio</th>
+          <th class="border px-3 py-2 text-right">% Var Diaria</th>
+          <th class="border px-3 py-2 text-right">TEM (%)</th>
+          <th class="border px-3 py-2 text-right">TNA s. (%)</th>
+          <th class="border px-3 py-2 text-right">TEA (%)</th>
+          <th class="border px-3 py-2 text-right">Volumen</th>
+          <th class="border px-3 py-2 text-right">% Directo</th>
+          <th class="border px-3 py-2 text-right">MEP Implícito</th>
+          <th class="border px-3 py-2 text-right">Spread Log</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[var(--ember-border)]" id="tbody"></tbody>
+    </table>
+  </div>
+  <p class="mt-2 text-xs text-gray-400 italic">
+  * Spread log = en pbs. sobre curva de rendimientos logarítmica interpolada en base TEM.
+  </p>
+
+</section>
+
+    <!-- === FUTUROS (ROFEX) — media pantalla + panel a la derecha === -->
+<section id="futuros-rofex" class="grid lg:grid-cols-2 gap-4">
+  <!-- Izquierda: tabla -->
+  <div class="fut-card rounded-2xl p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <div class="font-semibold">Futuros</div>
+      <div class="text-sm muted">(Mes · ROFEX · TNA · TIR)</div>
+      <div id="futuros-upd" class="ml-auto text-xs muted">Inicial (estático)</div>
+    </div>
+
+    <div class="fut-panel">
+      <table id="futuros-table">
+        <thead>
+          <tr>
+            <th class="fut-col-mes">Mes</th>
+            <th class="fut-col-rofex fut-num">ROFEX</th>
+            <th class="fut-col-tna   fut-num">TNA</th>
+            <th class="fut-col-tir   fut-num">TIR</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Derecha: mini‑gráfico + dólares -->
+  <div class="fut-card rounded-2xl p-4 flex flex-col gap-4">
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <div class="font-semibold">Curva Futuros</div>
+        <div class="text-xs muted">Líneas: TNA / TIR</div>
+      </div>
+      <div style="height:260px"><canvas id="futurosChart"></canvas></div>
+    </div>
+
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <div class="font-semibold">Dólar</div>
+        <div id="dolar-upd" class="text-xs muted">Inicial (estático)</div>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="card rounded-xl p-3 text-center">
+          <div class="text-xs muted">MEP</div><div id="dlr-mep" class="text-lg font-semibold">—</div>
+        </div>
+        <div class="card rounded-xl p-3 text-center">
+          <div class="text-xs muted">CCL</div><div id="dlr-ccl" class="text-lg font-semibold">—</div>
+        </div>
+        <div class="card rounded-xl p-3 text-center">
+          <div class="text-xs muted">Oficial</div><div id="dlr-of" class="text-lg font-semibold">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+    <script>
+(function(){
+  const API = '/api/externals/futuros';
+  const upd = document.getElementById('futuros-upd');
+  const tbody = document.querySelector('#futuros-table tbody');
+
+  // Fallback (sin Pase)
+  const FALLBACK = [
+    { mes:'AGO25', rofex:'1.312,000', tna:'53,63', tir:'70,31' },
+    { mes:'SEP25', rofex:'1.373,000', tna:'53,77', tir:'68,49' },
+    { mes:'OCT25', rofex:'1.432,000', tna:'53,75', tir:'66,62' },
+    { mes:'NOV25', rofex:'1.464,000', tna:'47,79', tir:'56,65' },
+    { mes:'DIC25', rofex:'1.499,000', tna:'43,72', tir:'50,04' },
+    { mes:'ENE26', rofex:'1.530,000', tna:'40,79', tir:'45,44' },
+    { mes:'FEB26', rofex:'1.555,000', tna:'38,52', tir:'42,01' },
+    { mes:'MAR26', rofex:'1.586,000', tna:'36,92', tir:'39,49' },
+    { mes:'ABR26', rofex:'1.607,000', tna:'34,90', tir:'36,67' },
+    { mes:'MAY26', rofex:'1.636,000', tna:'34,21', tir:'35,45' },
+    { mes:'JUN26', rofex:'1.665,000', tna:'33,34', tir:'34,04' },
+    { mes:'JUL26', rofex:'1.690,000', tna:'32,39', tir:'32,64' },
+  ];
+
+  function toNumber(v){ return Number(String(v).replace(/\./g,'').replace(',', '.')); }
+  function fmtNumber(n, frac=3){
+    if (typeof n === 'string') return n;
+    return new Intl.NumberFormat('es-AR',{minimumFractionDigits:frac,maximumFractionDigits:frac}).format(n);
+  }
+  function fmtPct(n){
+    const x = typeof n === 'number' ? n : toNumber(n);
+    if (!Number.isFinite(x)) return String(n)+' %';
+    return new Intl.NumberFormat('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(x)+' %';
+  }
+
+  function cell(text, align, extra=''){
+    const td = document.createElement('td');
+    td.textContent = text ?? '';
+    td.className = extra;
+    if (align==='right') td.style.textAlign = 'right';
+    return td;
+  }
+
+  function render(rows){
+    tbody.innerHTML = '';
+    for (const r of rows){
+      const tr = document.createElement('tr');
+      tr.append(
+        cell(r.mes,'left','fut-col-mes'),
+        cell(fmtNumber(r.rofex,3),'right','fut-col-rofex fut-num'),
+        cell(fmtPct(r.tna),'right','fut-col-tna fut-num'),
+        cell(fmtPct(r.tir),'right','fut-col-tir fut-num')
+      );
+      tbody.appendChild(tr);
+    }
+    window.__futurosRows = rows; // para el gráfico
+  }
+
+  async function refreshFuturos(){
+    try{
+      const res = await fetch(API,{cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      if(!Array.isArray(data) || !data.length){
+        render(FALLBACK); upd.textContent='Sin datos (fallback)'; return;
+      }
+      render(data);
+      upd.textContent = 'Actualizado: ' + new Date().toLocaleString('es-AR');
+    }catch(_){
+      render(FALLBACK);
+      if(!upd.textContent.includes('Actualizado')) upd.textContent='Fallback';
+    }
+  }
+
+  // Hook al botón "Actualizar"
+  function hookGlobalRefresh(){
+    const btn = document.getElementById('btnRefresh');
+    if(btn && !btn.dataset.futurosHook){
+      btn.addEventListener('click', ()=>{ try{ refreshFuturos(); }catch(_){} }, {passive:true});
+      btn.dataset.futurosHook='1';
+    }
+  }
+  hookGlobalRefresh();
+
+  /* ===== Mini‑gráfico de Futuros ===== */
+  let futChart=null;
+  const MONTHS=["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+  function parseMesCode(code){
+    if(!code) return null; code=String(code).toUpperCase().replace(/\s+/g,'');
+    const m3=code.slice(0,3), y2=code.slice(3); const mi=MONTHS.indexOf(m3); if(mi<0) return null;
+    let y=parseInt(y2,10); if(!Number.isFinite(y)) return null; if(y<100) y+=2000; return {y,m:mi+1};
+  }
+  function sortByMes(a,b){ const pa=parseMesCode(a.mes), pb=parseMesCode(b.mes);
+    if(!pa&&!pb) return 0; if(!pa) return 1; if(!pb) return -1; if(pa.y!==pb.y) return pa.y-pb.y; return pa.m-pb.m; }
+  function buildSeries(rows){
+    const ordered=[...(rows||[])].sort(sortByMes);
+    return { labels:ordered.map(r=>r.mes), tna:ordered.map(r=>toNumber(r.tna)), tir:ordered.map(r=>toNumber(r.tir)) };
+  }
+  function renderFuturosChart(rows){
+    const cv=document.getElementById('futurosChart'); if(!cv) return;
+    const ctx=cv.getContext('2d'); const s=buildSeries(rows);
+    if(futChart) futChart.destroy();
+    const css=getComputedStyle(document.documentElement);
+    futChart=new Chart(ctx,{type:'line',data:{
+      labels:s.labels,
+      datasets:[
+        {label:'TNA',data:s.tna,tension:.2,borderWidth:2,pointRadius:2},
+        {label:'TIR',data:s.tir,tension:.2,borderWidth:2,pointRadius:2}
+      ]},
+      options:{
+        maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:css.getPropertyValue('--ember-text').trim()}},
+          tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${new Intl.NumberFormat('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(c.parsed.y)} %`}}},
+        scales:{
+          x:{ticks:{color:css.getPropertyValue('--ember-muted').trim()},grid:{color:css.getPropertyValue('--ember-grid').trim()}},
+          y:{ticks:{color:css.getPropertyValue('--ember-muted').trim(),callback:v=>new Intl.NumberFormat('es-AR',{maximumFractionDigits:0}).format(v)+' %'},
+             grid:{color:css.getPropertyValue('--ember-grid').trim()}}
+        }
+      }});
+  }
+
+  // Redibujar gráfico luego del fetch
+  const _rf = refreshFuturos;
+  refreshFuturos = async function(){ await _rf(); if(window.__futurosRows) renderFuturosChart(window.__futurosRows); };
+  window.refreshFuturos = refreshFuturos;
+
+  // Primera pinta + loop
+  render(FALLBACK);
+  renderFuturosChart(FALLBACK);
+  refreshFuturos();
+  setInterval(refreshFuturos, 60000);
+
+/* ===== DÓLARES ===== */
+  const DLR_API = '/api/fx';   // <--- ahora usamos el endpoint nuevo
+  const FALLBACK_DLR = { mep:1500, ccl:1650, oficial:1250 };
+
+  const elUpd = document.getElementById('dolar-upd');
+  const elMep = document.getElementById('dlr-mep');
+  const elCcl = document.getElementById('dlr-ccl');
+  const elOf  = document.getElementById('dlr-of');
+
+  const nf0 = new Intl.NumberFormat('es-AR',{ maximumFractionDigits:0 });
+
+  function renderDolares(d){
+    elMep.textContent = d?.mep     != null ? ('$ ' + nf0.format(d.mep))     : '—';
+    elCcl.textContent = d?.ccl     != null ? ('$ ' + nf0.format(d.ccl))     : '—';
+    elOf.textContent  = d?.oficial != null ? ('$ ' + nf0.format(d.oficial)) : '—';
+  }
+
+    async function refreshDolares(){
+    try{
+      const r = await fetch(DLR_API, { cache:'no-store' });
+      if (!r.ok) throw new Error('HTTP '+r.status);
+      const data = await r.json();
+
+      window._fx=data;
+
+      renderMarketStatus(data);   // ← ACTUALIZA punto y texto según data.frozen
+      renderDolares(data);
+
+      elUpd.textContent = 'Actualizado: ' + new Date().toLocaleString('es-AR');
+    }catch(e){
+      // si falla, no inventamos estado
+      renderMarketStatus(null);
+      try { renderDolares(null); } catch(_) {}
+      if (!elUpd.textContent.includes('Actualizado')) elUpd.textContent = '—';
+    }
+  }
+
+  document.getElementById('btnRefresh')?.addEventListener(
+    'click', refreshDolares, { passive:true }
+  );
+
+  // inicial
+  renderDolares(FALLBACK_DLR);
+  refreshDolares();
+  setInterval(refreshDolares, 60000);
+})();
+
+</script>
+
+    </section>
+
+    <script>
+        
+    (function(){
+      const API = '/api/externals/futuros'; // si no existe, usa fallback
+      const upd = document.getElementById('futuros-upd');
+      const tbody = document.querySelector('#futuros-table tbody');
+
+      // Fallback con tus valores (sin "Pase", sólo Mes/ROFEX/TNA/TIR)
+      const FALLBACK = [
+        { mes:'AGO25', rofex:'1.312,000', tna:'53,63', tir:'70,31' },
+        { mes:'SEP25', rofex:'1.373,000', tna:'53,77', tir:'68,49' },
+        { mes:'OCT25', rofex:'1.432,000', tna:'53,75', tir:'66,62' },
+        { mes:'NOV25', rofex:'1.464,000', tna:'47,79', tir:'56,65' },
+        { mes:'DIC25', rofex:'1.499,000', tna:'43,72', tir:'50,04' },
+        { mes:'ENE26', rofex:'1.530,000', tna:'40,79', tir:'45,44' },
+        { mes:'FEB26', rofex:'1.555,000', tna:'38,52', tir:'42,01' },
+        { mes:'MAR26', rofex:'1.586,000', tna:'36,92', tir:'39,49' },
+        { mes:'ABR26', rofex:'1.607,000', tna:'34,90', tir:'36,67' },
+        { mes:'MAY26', rofex:'1.636,000', tna:'34,21', tir:'35,45' },
+        { mes:'JUN26', rofex:'1.665,000', tna:'33,34', tir:'34,04' },
+        { mes:'JUL26', rofex:'1.690,000', tna:'32,39', tir:'32,64' },
+      ];
+
+      function toNumber(v){ return Number(String(v).replace(/\./g,'').replace(',', '.')); }
+      function fmtNumber(n, frac=3){
+        // acepta "1.312,000" o number → devuelve "1.312,000"
+        if (typeof n === 'string') return n;
+        const nf = new Intl.NumberFormat('es-AR', { minimumFractionDigits: frac, maximumFractionDigits: frac });
+        return nf.format(n);
+      }
+      function fmtPct(n){
+        const x = typeof n === 'number' ? n : toNumber(n);
+        if (!Number.isFinite(x)) return String(n) + ' %';
+        return new Intl.NumberFormat('es-AR',{ minimumFractionDigits:2, maximumFractionDigits:2}).format(x) + ' %';
+      }
+
+    function render(rows){
+  tbody.innerHTML = '';
+  for (const r of rows){
+    const tr = document.createElement('tr');
+    const tdMes   = cell(r.mes,  'left',  'fut-col-mes');
+    const tdRofex = cell(fmtNumber(r.rofex, 3), 'right', 'fut-col-rofex fut-num');
+    const tdTna   = cell(fmtPct(r.tna),         'right', 'fut-col-tna fut-num');
+    const tdTir   = cell(fmtPct(r.tir),         'right', 'fut-col-tir fut-num');
+    tr.append(tdMes, tdRofex, tdTna, tdTir);
+    tbody.appendChild(tr);
+  }
+  // datos disponibles para el mini‑gráfico
+  window.__futurosRows = rows;
+}
+    
+
+    function cell(text, align, extraClass=''){
+      const td = document.createElement('td');
+      td.textContent = text ?? '';
+      td.className = extraClass;
+      if (align === 'right') td.style.textAlign = 'right';
+      return td;
+    }
+
+
+      async function refreshFuturos(){
+        try{
+          const res = await fetch(API, { cache:'no-store' });
+          if(!res.ok) throw new Error('HTTP '+res.status);
+          const data = await res.json();
+          // data esperado: [{mes, rofex, tna, tir}] (strings o números)
+          if (!Array.isArray(data) || !data.length) {
+            render(FALLBACK);
+            upd.textContent = 'Sin datos (fallback)';
+            return;
+          }
+          render(data);
+          upd.textContent = 'Actualizado: ' + new Date().toLocaleString('es-AR');
+        }catch(e){
+          render(FALLBACK);
+          // mantenemos "Inicial (estático)" para no confundir
+        }
+      }
+
+      // Exponer para el hook global (el de “Actualizar”)
+      window.refreshFuturos = refreshFuturos;
+
+      // Enganche al botón "Actualizar" de arriba (igual que Cauciones mini)
+      function hookGlobalRefresh(){
+        const candidates = Array.from(document.querySelectorAll('button, a'))
+          .filter(el => el.offsetParent !== null)
+          .filter(el => /\bactualizar\b/i.test(el.textContent||''));
+        candidates.forEach(el=>{
+          if(!el.dataset.futurosHook){
+            el.addEventListener('click', ()=> { try{ window.refreshFuturos(); }catch(_){} }, { passive:true });
+            el.dataset.futurosHook = '1';
+          }
+        });
+      }
+      hookGlobalRefresh();
+      const mo = new MutationObserver(hookGlobalRefresh);
+      mo.observe(document.body, { childList:true, subtree:true });
+
+      /* ===== Mini‑gráfico de Futuros + Widget Dólar ===== */
+    (function(){
+    // --- Mini‑gráfico FUTUROS (TNA/TIR) ---
+    let futChart = null;
+    const MONTHS = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+
+    function parseMesCode(code){
+      if(!code) return null;
+      code = String(code).toUpperCase().replace(/\s+/g,'');
+      const m3 = code.slice(0,3), rest = code.slice(3);
+      const mi = MONTHS.indexOf(m3); if (mi<0) return null;
+      let y = parseInt(rest,10); if (!Number.isFinite(y)) return null;
+      if (y<100) y += 2000; // "25" -> 2025
+      return { y, m: mi+1 };
+    }
+    function sortByMes(a,b){
+      const pa = parseMesCode(a.mes), pb = parseMesCode(b.mes);
+      if(!pa && !pb) return 0; if(!pa) return 1; if(!pb) return -1;
+      if (pa.y!==pb.y) return pa.y - pb.y;
+      return pa.m - pb.m;
+    }
+    function buildSeries(rows){
+      const ordered = [...(rows||[])].sort(sortByMes);
+      return {
+        labels: ordered.map(r=>r.mes),
+        tna: ordered.map(r => toNumber(r.tna)), // reutiliza toNumber del bloque principal
+        tir: ordered.map(r => toNumber(r.tir))
+      };
+    }
+    function renderFuturosChart(rows){
+      const cv = document.getElementById('futurosChart'); if(!cv) return;
+      const ctx = cv.getContext('2d');
+      const s = buildSeries(rows);
+      if (futChart) futChart.destroy();
+      const css = getComputedStyle(document.documentElement);
+      futChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: s.labels,
+          datasets: [
+            { label: 'TNA', data: s.tna, tension: .2, borderWidth: 2, pointRadius: 2 },
+            { label: 'TIR', data: s.tir, tension: .2, borderWidth: 2, pointRadius: 2 }
+          ]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: css.getPropertyValue('--ember-text').trim() } },
+            tooltip: { callbacks: { label: (c)=> `${c.dataset.label}: ${
+              new Intl.NumberFormat('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(c.parsed.y)
+            } %` } }
+          },
+          scales: {
+            x: { ticks:{ color: css.getPropertyValue('--ember-muted').trim() },
+                grid:{ color: css.getPropertyValue('--ember-grid').trim() } },
+            y: { ticks:{ color: css.getPropertyValue('--ember-muted').trim(),
+                        callback:v=>new Intl.NumberFormat('es-AR',{maximumFractionDigits:0}).format(v)+' %' },
+                grid:{ color: css.getPropertyValue('--ember-grid').trim() } }
+          }
+        }
+      });
+    }
+
+    // Envolvemos refreshFuturos para redibujar el gráfico luego de cada fetch
+    const _refreshFuturos = window.refreshFuturos;
+    window.refreshFuturos = async function(){
+      await _refreshFuturos();
+      if (window.__futurosRows) renderFuturosChart(window.__futurosRows);
+    };
+    // primer gráfico con el fallback inicial
+    if (window.__futurosRows) renderFuturosChart(window.__futurosRows);
+
+    // --- DÓLARES (MEP/CCL/Oficial) ---
+    const DLR_API = '/api/externals/dolares'; // si no existe, usa fallback
+    const FALLBACK_DLR = { mep: 1500, ccl: 1650, oficial: 1250 };
+
+    const elUpd = document.getElementById('dolar-upd');
+    const elMep = document.getElementById('dlr-mep');
+    const elCcl = document.getElementById('dlr-ccl');
+    const elOf  = document.getElementById('dlr-of');
+    const nf0 = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
+
+    function renderDolares(d){
+      elMep.textContent = d?.mep != null ? '$ ' + nf0.format(d.mep) : '—';
+      elCcl.textContent = d?.ccl != null ? '$ ' + nf0.format(d.ccl) : '—';
+      elOf.textContent  = d?.oficial != null ? '$ ' + nf0.format(d.oficial) : '—';
+    }
+    async function refreshDolares(){
+      try{
+        const r = await fetch(DLR_API, { cache:'no-store' });
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const data = await r.json();
+        renderMarketStatus(data);            // ← ACTUALIZA el puntito y el texto
+        renderDolares(data);
+        elUpd.textContent = 'Actualizado: ' + new Date().toLocaleString('es-AR');
+      }catch(e){
+        renderDolares(FALLBACK_DLR);
+        if (!elUpd.textContent.includes('Actualizado')) elUpd.textContent = 'Fallback';
+      }
+    }
+    // Hook al botón “Actualizar”
+    document.getElementById('btnRefresh')?.addEventListener('click', refreshDolares, { passive:true });
+
+    // Primera pinta + loop
+    renderDolares(FALLBACK_DLR);
+    refreshDolares();
+    setInterval(refreshDolares, 60000);
+  })();
+
+
+      // Primera pinta + loop cada 60s
+      render(FALLBACK);
+      refreshFuturos();
+      setInterval(refreshFuturos, 60000);
+    })();
+    </script>
+ 
+          <!-- Script FUTUROS -->
+      <script>
+        // ...todo lo de refreshFuturos, render(), etc...
+        // al final de render(rows), expongo los datos para el gráfico:
+        window.__futurosRows = rows;
+      </script>
+
+      <!-- Script Mini-gráfico + Dólares -->
+      <script>
+        (function(){
+          // --- lo que te pasé en el punto 2 ---
+        })();
+      </script>
+        <!-- ... justo antes de cerrar el body -->
+    <script>
+
+    function renderMarketStatus(fx){
+      const el = document.getElementById('market-status');
+      if (!el) return;
+
+      // limpiar estado previo y setear el actual
+      el.classList.remove('open','closed');
+      const isClosed = !!(fx && fx.frozen === true);
+      el.classList.add(isClosed ? 'closed' : 'open');
+
+      // texto
+      const txtEl = document.getElementById('market-status-text');
+      if (txtEl) txtEl.textContent = isClosed ? 'Mercado cerrado' : 'Mercado abierto';
+
+      // hora grande (si viene last_update)
+      const horaEl = document.getElementById('horaInput');
+      if (horaEl) {
+        const iso = fx && fx.last_update;
+        if (iso) {
+          horaEl.textContent = new Date(iso).toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+        }
+      }
+
+      // tooltip
+      el.title = `${isClosed ? 'Mercado cerrado' : 'En vivo'} · Fecha de mercado: ${(fx && fx.market_date) || '—'}`;
+    }
+
+    </script>
+    </body>
+    </html>
+
+    <!-- Sensibilidad -->
+<section class="card rounded-2xl p-4">
+  <!-- Título principal -->
+  <h2 class="text-xl font-semibold mb-3">Sensibilidad de tasas sobre Lecaps/Boncaps</h2>
+
+  <div class="flex items-end flex-wrap gap-3 mb-3">
+    <h3 class="text-lg font-semibold mr-auto">Potencial upside/downside — var. % sobre precio actual</h3>
+    <div>
+      <label class="text-xs muted block">TEM mín (%)</label>
+      <input id="rateMin" type="number" step="0.01" value="2.00" class="rounded-xl p-2 w-28">
+    </div>
+    <div>
+      <label class="text-xs muted block">TEM máx (%)</label>
+      <input id="rateMax" type="number" step="0.01" value="4.00" class="rounded-xl p-2 w-28">
+    </div>
+    <div>
+      <label class="text-xs muted block">Paso (%)</label>
+      <input id="rateStep" type="number" step="0.01" value="0.25" class="rounded-xl p-2 w-24">
+    </div>
+    <button id="btnRates" class="btn px-4 py-2 rounded-xl">Actualizar</button>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm" id="sensTable"></table>
+  </div>
+
+  <p class="text-xs muted mt-2">
+    Cálculo: Precio implícito por tasa de descuento (TEM), VF / (1 + ((1+TEM)<sup>dias/30</sup> − 1)).
+    Variación = (Precio implícito / Precio actual − 1).
+  </p>
+</section>
+
+    </div>
+
+  <script>
+    let raw = [];
+    let chart;
+    let lastFiltered = [];
+    let currentRates = []; // se arma desde los inputs
+
+    const nf0  = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }); // NUEVO para Volumen
+    const nf2 = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const nf3 = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+    const pct   = (x)=> (x==null||isNaN(x))?null:(x*100);
+    const pctStr= (x)=> (x==null||isNaN(x))? "": `${nf2.format(x*100)}%`;
+    const num3  = (x)=> (x==null||isNaN(x))? "": nf3.format(Number(x));
+    const signPct = (x)=> (x==null||isNaN(x))? "": `${(x>=0? '' : '-')}${nf2.format(Math.abs(x))}%`;
+    let refreshTimer = null;
+let isLoading = false;
+function setLoading(v){
+  isLoading = !!v;
+  const b = document.getElementById('btnRefresh');
+  if (b) b.disabled = isLoading;
+}
+    // ------- Carga inicial -------
+    async function load() {
+  try {
+    setLoading(true);
+    const r = await fetch('/api/lecaps?ts=' + Date.now(), { cache: 'no-store' });
+    raw = await r.json();
+    buildRatesFromInputs();
+    render();
+    calcPopulate();
+  } catch(e) {
+    console.error(e);
+  } finally {
+    setLoading(false);
+  }
+}
+     // ------- Filtros y cabecera -------
+    function filters(d) {
+      const t = document.getElementById('fTicker').value.trim().toUpperCase();
+      const md = Number(document.getElementById('fMinDias').value);
+      return d.filter(x => {
+        const okT = !t || (x.ticker || '').toUpperCase().includes(t);
+        const okD = !md || ((x.dias_al_vto ?? 0) >= md);
+        return okT && okD;
+      });
+    }
+
+    function renderHeader(d) {
+      document.getElementById('fechaInput').textContent = d[0]?.fecha ?? '—';
+      document.getElementById('horaInput').textContent  = d[0]?.hora_input ?? '—';
+      document.getElementById('fechaLiq').textContent   = d[0]?.fecha_liquidacion ?? '—';
+    }
+
+        function renderTable(d) {
+      const tb = document.getElementById('tbody');
+      tb.innerHTML = '';
+
+      d.forEach(r => {
+        const tr = document.createElement('tr');
+
+        // % var diaria
+        const varPct = (r.pct_change == null || isNaN(Number(r.pct_change))) ? null : Number(r.pct_change);
+        const varStr = (varPct == null) ? '' : `${nf2.format(varPct)}%`;
+
+        // Volumen
+        const vol = (r.v != null ? r.v : r.volumen);
+        const volStr = (vol == null || isNaN(Number(vol))) ? '' : nf0.format(Number(vol));
+
+        // ===== NUEVOS CÁLCULOS =====
+        // % Directo = Valor final / Precio
+        const vf = Number(r.valor_final);
+        const px = Number(r.precio);
+        const porcDir = (Number.isFinite(vf) && Number.isFinite(px) && px>0) ? (vf/px*100-100) : null;
+
+        // MEP implícito = MEP * (Valor final / Precio)
+        const fxMep = (window._fx && Number(window._fx.mep)) || null;
+        const mepImp = (porcDir!=null && fxMep) ? (fxMep * (vf/px)) : null;
+
+        // Spread Log = (TEM% – TEM_curva%) *100  (en puntos básicos)
+        const reg = window.__reg;
+        const x = Number(r.dias_al_vto);
+        const y = Number(r.tem_bruta)*100; // TEM en %
+        let spLog = null;
+        if (reg && Number.isFinite(x) && x>0 && Number.isFinite(y)) {
+          const yHat = reg.a + reg.b * Math.log(x);
+          spLog = (y - yHat) * 100; // diferencia en bps
+        }
+
+        tr.innerHTML = `
+          <td class="border px-3 py-2">${r.ticker ?? ''}</td>
+          <td class="border px-3 py-2">${r.vencimiento ?? ''}</td>
+          <td class="border px-3 py-2 text-right">${r.dias_al_vto ?? ''}</td>
+          <td class="border px-3 py-2 text-right">${num3(r.precio)}</td>
+          <td class="border px-3 py-2 text-right var-cell">${varStr}</td>
+          <td class="border px-3 py-2 text-right">${pctStr(r.tem_bruta)}</td>
+          <td class="border px-3 py-2 text-right">${pctStr(r.tna_simple_bruta)}</td>
+          <td class="border px-3 py-2 text-right">${pctStr(r.tea_bruta)}</td>
+          <td class="border px-3 py-2 text-right">${volStr}</td>
+          <!-- nuevas -->
+          <td class="border px-3 py-2 text-right">${porcDir==null ? '-' : nf2.format(porcDir)+'%'}</td>
+          <td class="border px-3 py-2 text-right">${mepImp==null ? '-' : nf2.format(mepImp)}</td>
+          <td class="border px-3 py-2 text-right">${spLog==null ? '-' : nf0.format(spLog)}</td>
+        `;
+
+        const tdVar = tr.querySelector('.var-cell');
+        if (tdVar && varPct != null) {
+          tdVar.style.color = varPct > 0 ? 'limegreen' : (varPct < 0 ? 'salmon' : '');
+        }
+
+        const tdSpread = tr.querySelector('.spread-cell');
+        if (tdSpread && spLog != null) {
+          tdSpread.style.color = spLog > 0 ? 'limegreen' : (spLog < 0 ? 'salmon' : '');
+        }
+
+        tb.appendChild(tr);
+      });
+    }
+   
+      // ------- Sensibilidad -------
+    function buildRates(minPct, maxPct, stepPct){
+      const a = [];
+      const min = Number(minPct)/100, max = Number(maxPct)/100, step = Number(stepPct)/100;
+      if (!isFinite(min) || !isFinite(max) || !isFinite(step) || step<=0 || max<=min) return a;
+      for (let x=min; x<=max+1e-9; x+=step) a.push(Number(x.toFixed(6)));
+      return a;
+    }
+    function buildRatesFromInputs(){
+      const min = document.getElementById('rateMin').value || '2.00';
+      const max = document.getElementById('rateMax').value || '4.00';
+      const step= document.getElementById('rateStep').value || '0.25';
+      currentRates = buildRates(min, max, step);
+    }
+
+    function heatColor(p){
+      if (p==null || isNaN(p)) return 'transparent';
+      const clamp = Math.max(-22, Math.min(12, p)); // rango típico
+      const t = (clamp + 22) / (12 + 22);           // 0..1
+      const hue = 0 + t * 120;                      // rojo→verde
+      const sat = 72;
+      const light = 38;
+      return `hsl(${hue}, ${sat}%, ${light}%)`;
+    }
+    // SIEMPRE texto blanco
+    function heatTextColor(){ return '#FFFFFF'; }
+
+    function impliedPrice(vf, dias, tem){
+      if(!vf || !dias || dias<=0) return null;
+      const rp = Math.pow(1+tem, dias/30) - 1;
+      return vf / (1+rp);
+    }
+
+    function renderSensitivity(d){
+      const el = document.getElementById('sensTable');
+      if (!d.length || !currentRates.length){ el.innerHTML = '<tbody></tbody>'; return; }
+
+      let thead = `
+        <thead class="bg-black/40 sticky">
+          <tr>
+            <th class="border px-3 py-2 text-left">Especie</th>
+            <th class="border px-3 py-2 text-left">Vto.</th>
+            <th class="border px-3 py-2 text-right">Precio Vto.</th>
+            <th class="border px-3 py-2 text-right">Precio actual</th>
+            <th class="border px-3 py-2 text-center" colspan="${currentRates.length}">Tasa de descuento (TEM)</th>
+            
+          </tr>
+          <tr>
+            <th class="border px-3 py-2"></th>
+            <th class="border px-3 py-2"></th>
+            <th class="border px-3 py-2"></th>
+            <th class="border px-3 py-2"></th>
+            ${currentRates.map(r=>`<th class="border px-3 py-2 text-right">${nf2.format(r*100)}%</th>`).join('')}
+          </tr>
+        </thead>`;
+
+      let tbody = '<tbody>';
+      d.forEach(r=>{
+        const vf = Number(r.valor_final);
+        const dias = Number(r.dias_al_vto);
+        const pa = Number(r.precio);
+        const rowCells = currentRates.map(tem=>{
+          const pim = impliedPrice(vf, dias, tem);
+          const varPct = pim && pa ? (pim/pa - 1)*100 : null;
+          const bg = heatColor(varPct);
+          const col = heatTextColor();
+          return `<td class="border px-3 py-1 text-right" style="background:${bg}; color:${col}">${signPct(varPct)}</td>`;
+        }).join('');
+        tbody += `
+          <tr>
+            <td class="border px-3 py-2">${r.ticker ?? ''}</td>
+            <td class="border px-3 py-2">${r.vencimiento ?? ''}</td>
+            <td class="border px-3 py-2 text-right">${num3(vf)}</td>
+            <td class="border px-3 py-2 text-right">${num3(pa)}</td>
+            ${rowCells}
+          </tr>`;
+      });
+      tbody += '</tbody>';
+
+      el.innerHTML = thead + tbody;
+    }
+
+    // ------- Gráfico (regresión logarítmica) -------
+    function logRegression(points) {
+      const n = points.length;
+      let sumL=0, sumY=0, sumLL=0, sumLY=0;
+      for (const p of points) {
+        const lx = Math.log(p.x);
+        sumL += lx; sumY += p.y; sumLL += lx*lx; sumLY += lx*p.y;
+      }
+      const denom = n*sumLL - sumL*sumL;
+      if (denom === 0) return null;
+      const b = (n*sumLY - sumL*sumY) / denom;
+      const a = (sumY - b*sumL) / n;
+      return {a, b};
+    }
+    function buildLogLine(reg, xmin, xmax, steps=160) {
+      const xs = [];
+      const dx = (xmax - xmin) / (steps - 1);
+      for (let i = 0; i < steps; i++) {
+        const x = xmin + i*dx;
+        const y = reg.a + reg.b * Math.log(x);
+        xs.push({x, y});
+      }
+      return xs;
+    }
+    function renderChart(d) {
+  const ctx = document.getElementById('chart').getContext('2d');
+  const css = getComputedStyle(document.documentElement);
+
+  // —— Tomo la misma tipografía del título de la calculadora ——
+  const h2 = document.querySelector('.card h2'); // ajustá el selector si tu h2 está en otro contenedor
+  const h2cs = h2 ? getComputedStyle(h2) : null;
+  const titleFamily =
+    (h2cs && h2cs.fontFamily) ||
+    "'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  const titleSize = h2cs ? Math.round(parseFloat(h2cs.fontSize)) : 20; // text-xl ≈ 20
+  // font-semibold en Tailwind ~ 600
+  const titleWeight = h2cs ? (h2cs.fontWeight || '600') : '600';
+  const titleColor =
+    (h2cs && h2cs.color) || (css.getPropertyValue('--ember-text').trim() || '#FFFFFF');
+
+  const points = d
+    .filter(r => r.dias_al_vto != null && r.tem_bruta != null && r.dias_al_vto > 0)
+    .map(r => ({ x: r.dias_al_vto, y: (r.tem_bruta * 100), label: r.ticker }));
+
+  if (chart) chart.destroy();
+
+  let lineData = null;
+  if (points.length >= 2) {
+    const reg = logRegression(points);
+    window.__reg = reg || null; 
+    
+    if (reg) {
+      const xs = points.map(p => p.x);
+      lineData = buildLogLine(reg, Math.max(1, Math.min(...xs)), Math.max(...xs));
+    }
+  }
+
+  chart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+          datasets: [
+        {
+          label: 'TEM',
+          data: points,
+          parsing: false,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointHitRadius: 12,
+          backgroundColor: css.getPropertyValue('--point').trim(),
+          borderColor: css.getPropertyValue('--point-border').trim(),
+          borderWidth: 1
+        },
+        ...(lineData
+          ? [
+              {
+                type: 'line',
+                label: 'curvalog',               // 👈 nombre de la curva
+                data: lineData,
+                parsing: false,
+                borderWidth: 2,
+                pointRadius: 0,
+                borderColor: css.getPropertyValue('--reg-line').trim(),
+                tension: 0.15
+              }
+            ]
+          : [])
+      ]        
+    },
+    options: {
+      maintainAspectRatio: false,
+      interaction: { mode: 'nearest', axis: 'x', intersect: false },
+      plugins: {
+        title: {
+          display: true,
+          text: 'Curva de rendimientos - Lecaps/Boncaps',
+          align: 'start',
+          color: titleColor,
+          // 👇 forzamos la misma tipografía del h2
+          font: {
+            family: titleFamily,
+            size: titleSize,     // si lo querés 1:1 con el h2
+            weight: titleWeight  // ~600 (font-semibold)
+          },
+          padding: { top: 0, bottom: 16 }
+        },
+        legend: { display: false },
+        tooltip: {
+        backgroundColor: '#0b0b0b',
+        titleColor: '#e5e7eb',
+        bodyColor: '#e5e7eb',
+        borderColor: '#1f2937',
+        borderWidth: 1,
+        callbacks: {
+          label: (ctx) => {
+            // si es la línea, usar el label del dataset; si es punto, usar el label del dato
+            const isLine = (ctx.dataset?.type === 'line') || (ctx.chart?.config?.type === 'line' && ctx.datasetIndex > 0);
+            const name = isLine ? (ctx.dataset?.label ?? 'curvalog') : (ctx.raw?.label ?? '');
+            const x = (ctx.raw?.x ?? ctx.parsed?.x);
+            const y = (ctx.raw?.y ?? ctx.parsed?.y);
+            return `${name} | Días: ${x} | TEM: ${nf2.format(y)}%`;
+          }
+        }
+        },
+        datalabels: { display: false }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Días al vencimiento', color: css.getPropertyValue('--ember-text').trim() },
+          ticks: { precision: 0, color: css.getPropertyValue('--ember-muted').trim() },
+          grid: { display: false }
+        },
+        y: {
+          title: { display: true, text: 'TEM (%)', color: css.getPropertyValue('--ember-text').trim() },
+          ticks: { color: css.getPropertyValue('--ember-muted').trim(), callback: (v) => `${nf2.format(v)}%` },
+          grid: { display: false }
+        }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+    // ------- Export -------
+    function toCSV(rows, fi, fl, hi) {
+      const sep = ';';
+      const esc = s => {
+        if (s==null) return '';
+        s = String(s);
+        return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+      };
+      const headExtra = [
+        `Fecha input${sep}${esc(fi||'')}`,
+        `Hora input${sep}${esc(hi||'')}`,
+        `Fecha de liquidación${sep}${esc(fl||'')}`,
+        ''
+      ];
+      const head = ['Ticker','Vencimiento','Días','Precio','% Var Diaria','TEM (%)','TNA s. (%)','TEA (%)','Volumen','% Directo','MEP Implícito','Spread Log (bps)'].join(sep);
+      const lines = rows.map(r => [
+        esc(r.ticker ?? ''), esc(r.vencimiento ?? ''), esc(r.dias_al_vto ?? ''),
+        esc(nf3.format(+r.precio || 0)),
+        esc(r.pct_change==null?'': nf2.format(Number(r.pct_change)) + '%'),
+        esc(pctStr(r.tem_bruta)), esc(pctStr(r.tna_simple_bruta)), esc(pctStr(r.tea_bruta)),
+        esc((r.v ?? r.volumen) == null ? '' : nf0.format(Number(r.v ?? r.volumen)))
+      ].join(sep));
+    }
+    function downloadCSV() {
+      const fi = lastFiltered[0]?.fecha ?? '';
+      const fl = lastFiltered[0]?.fecha_liquidacion ?? '';
+      const hi = lastFiltered[0]?.hora_input ?? '';
+      const csv = toCSV(lastFiltered, fi, fl, hi);
+      const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = `${(fi||'export').replace(/\//g,'-')}_${(hi||'').replace(/:/g,'')}`;
+      a.href = url; a.download = `lecaps-boncaps_${stamp}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    function downloadXLSX() {
+      const fi = lastFiltered[0]?.fecha ?? '';
+      const fl = lastFiltered[0]?.fecha_liquidacion ?? '';
+      const hi = lastFiltered[0]?.hora_input ?? '';
+      const rows = [
+        { Campo: 'Fecha input', Valor: fi },
+        { Campo: 'Hora input', Valor: hi },
+        { Campo: 'Fecha de liquidación', Valor: fl },
+        {},
+        { Ticker:'Ticker', Vencimiento:'Vencimiento', Dias:'Días', Precio:'Precio', Var:'% Var Diaria', TEM:'TEM (%)', TNA:'TNA s. (%)', TEA:'TEA (%)', Vol:'Volumen' },
+          ...lastFiltered.map(r => ({
+        Ticker: r.ticker ?? '',
+        Vencimiento: r.vencimiento ?? '',
+        Dias: r.dias_al_vto ?? '',
+        Precio: nf3.format(+r.precio || 0),
+        Var: r.pct_change == null ? '' : nf2.format(Number(r.pct_change)) + '%',
+        TEM: pctStr(r.tem_bruta),
+        TNA: pctStr(r.tna_simple_bruta),
+        TEA: pctStr(r.tea_bruta),
+        Vol: ((r.v ?? r.volumen) == null ? '' : nf0.format(Number(r.v ?? r.volumen)))
+      }))
+      ];
+      const ws = XLSX.utils.json_to_sheet(rows, { skipHeader: true });
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Lecaps-Boncaps');
+      const stamp = `${(fi||'export').replace(/\//g,'-')}_${(hi||'').replace(/:/g,'')}`;
+      XLSX.writeFile(wb, `lecaps-boncaps_${stamp}.xlsx`);
+    }
+
+    // ------- Render maestro -------
+    function render() {
+      const d = filters(raw);
+      lastFiltered = d;
+      renderHeader(d);
+      renderChart(d);
+      renderTable(d);
+      renderSensitivity(d);
+      
+      const has = !!d.length;
+      document.getElementById('btnCSV').disabled  = !has;
+      document.getElementById('btnXLSX').disabled = !has;
+      calcPopulate();
+    }
+
+    // ------- Eventos -------
+    document.getElementById('btnApply').addEventListener('click', render);
+    document.getElementById('btnClear').addEventListener('click', () => {
+      document.getElementById('fTicker').value = '';
+      document.getElementById('fMinDias').value = '';
+      render();
+    });
+    document.getElementById('btnCSV').addEventListener('click', downloadCSV);
+    document.getElementById('btnXLSX').addEventListener('click', downloadXLSX);
+
+    // Sensibilidad – rango de tasas
+    document.getElementById('btnRates').addEventListener('click', () => { buildRatesFromInputs(); renderSensitivity(lastFiltered); });
+    ['rateMin','rateMax','rateStep'].forEach(id=>{
+      document.getElementById(id).addEventListener('change', () => { buildRatesFromInputs(); renderSensitivity(lastFiltered); });
+    });
+
+    // ------- Calculadora -------
+    const round2 = x => new Intl.NumberFormat('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2}).format(x);
+    const round3 = x => new Intl.NumberFormat('es-AR', {minimumFractionDigits:3, maximumFractionDigits:3}).format(x);
+
+    function tasasDesdePrecio(vf, precioEfec, dias) {
+      if (!vf || !precioEfec || !dias || dias <= 0) return {TEM:null, TNA:null, TEA:null};
+      const rp = vf / precioEfec - 1.0;
+      const TEM = Math.pow(1 + rp, 30 / dias) - 1;
+      const TNA = rp * (365 / dias);
+      const TEA = Math.pow(1 + rp, 365 / dias) - 1;
+      return {TEM, TNA, TEA};
+    }
+    function precioDesdeTasa(vf, tipo, valorPct, dias) {
+      if (!vf || !valorPct || !dias || dias <= 0) return null;
+      const t = valorPct / 100;
+      let rp = null;
+      if (tipo === 'TEM') rp = Math.pow(1 + t, dias / 30) - 1;
+      if (tipo === 'TNA') rp = t * (dias / 365);
+      if (tipo === 'TEA') rp = Math.pow(1 + t, dias / 365) - 1;
+      if (rp == null) return null;
+      return vf / (1 + rp);
+    }
+
+    const selTicker   = document.getElementById('calcTicker');
+    const inDias      = document.getElementById('calcDias');
+    const inVF        = document.getElementById('calcVF');
+    const inComision  = document.getElementById('calcComision');
+    const chkNeto     = document.getElementById('calcNeto');
+
+    const modeFromPrice = document.getElementById('modeFromPrice');
+    const modeFromRate  = document.getElementById('modeFromRate');
+    const inPrecio      = document.getElementById('inPrecio');
+    const inTipoTasa    = document.getElementById('inTipoTasa');
+    const inValorTasa   = document.getElementById('inValorTasa');
+
+    const outPrecio = document.getElementById('outPrecio');
+    const outTEM    = document.getElementById('outTEM');
+    const outTNA    = document.getElementById('outTNA');
+    const outTEA    = document.getElementById('outTEA');
+
+    function mapByTicker(arr) { const m = new Map(); arr.forEach(r => { if (r?.ticker) m.set(r.ticker, r); }); return m; }
+    let mapTick = new Map();
+
+    function calcPopulate() {
+      mapTick = mapByTicker(raw);
+      const current = selTicker.value;
+      selTicker.innerHTML = '';
+      [...mapTick.keys()].sort().forEach(tk => {
+        const opt = document.createElement('option');
+        opt.value = tk; opt.textContent = tk;
+        selTicker.appendChild(opt);
+      });
+      if (current && mapTick.has(current)) selTicker.value = current;
+      calcUpdateInstrument();
+    }
+    function calcUpdateInstrument() {
+      const r = mapTick.get(selTicker.value);
+      inDias.value = r?.dias_al_vto ?? '';
+      inVF.value   = r?.valor_final != null ? round3(Number(r.valor_final)) : '';
+      inPrecio.value = r?.precio != null ? Number(r.precio).toFixed(3) : '';
+      outPrecio.textContent = outTEM.textContent = outTNA.textContent = outTEA.textContent = '—';
+    }
+    function precioEfectivoDesdeBruto(precioBruto, comiPct, usarNeto) {
+      if (!usarNeto) return precioBruto;
+      const k = 1 + (Number(comiPct||0) / 100);
+      return precioBruto * k;
+    }
+    function precioBrutoDesdeEfectivo(precioEfec, comiPct, usarNeto) {
+      if (!usarNeto) return precioEfec;
+      const k = 1 + (Number(comiPct||0) / 100);
+      return precioEfec / k;
+    }
+    function calcRun() {
+      const r = mapTick.get(selTicker.value);
+      const dias = Number(inDias.value || r?.dias_al_vto);
+      const vf   = Number(String(inVF.value).replace('.', '').replace(',', '.')) || Number(r?.valor_final);
+      const usarNeto = !!chkNeto.checked;
+      const comiPct  = Number(inComision.value || 0);
+      if (!dias || !vf) return;
+
+      if (modeFromPrice.checked) {
+        const precioBruto = Number(inPrecio.value);
+        const precioEfec  = precioEfectivoDesdeBruto(precioBruto, comiPct, usarNeto);
+        const {TEM, TNA, TEA} = tasasDesdePrecio(vf, precioEfec, dias);
+        outPrecio.textContent = isFinite(precioBruto) ? round3(precioBruto) + (usarNeto? ` (efec: ${round3(precioEfec)})` : '') : '—';
+        outTEM.textContent = TEM!=null ? round2(TEM*100)+'%' : '—';
+        outTNA.textContent = TNA!=null ? round2(TNA*100)+'%' : '—';
+        outTEA.textContent = TEA!=null ? round2(TEA*100)+'%' : '—';
+      } else {
+        const tipo = inTipoTasa.value;
+        const val  = Number(inValorTasa.value);
+        const precioEfec = precioDesdeTasa(vf, tipo, val, dias);
+        const precioBruto = precioBrutoDesdeEfectivo(precioEfec, comiPct, usarNeto);
+        const tasas = precioEfec ? tasasDesdePrecio(vf, precioEfec, dias) : {TEM:null,TNA:null,TEA:null};
+        outPrecio.textContent = (precioBruto && isFinite(precioBruto))
+          ? (round3(precioBruto) + (usarNeto? ` (efec: ${round3(precioEfec)})` : ''))
+          : '—';
+        outTEM.textContent = tasas.TEM!=null ? round2(tasas.TEM*100)+'%' : '—';
+        outTNA.textContent = tasas.TNA!=null ? round2(tasas.TNA*100)+'%' : '—';
+        outTEA.textContent = tasas.TEA!=null ? round2(tasas.TEA*100)+'%' : '—';
+      }
+    }
+    function calcClear() { inPrecio.value = ''; inValorTasa.value=''; outPrecio.textContent = outTEM.textContent = outTNA.textContent = outTEA.textContent = '—'; }
+    function refreshMode() { const p = modeFromPrice.checked; inPrecio.disabled=!p; inTipoTasa.disabled=p; inValorTasa.disabled=p; }
+
+    document.getElementById('calcRun').addEventListener('click', calcRun);
+    document.getElementById('calcClear').addEventListener('click', calcClear);
+    selTicker.addEventListener('change', calcUpdateInstrument);
+    modeFromPrice.addEventListener('change', refreshMode);
+    modeFromRate.addEventListener('change', refreshMode);
+    refreshMode();
+
+        // Eventos export
+    document.getElementById('btnCSV').addEventListener('click', downloadCSV);
+    document.getElementById('btnXLSX').addEventListener('click', downloadXLSX);
+
+    // --- Refresh manual + Auto ---
+    function refreshNow(){
+      // si tenés isLoading de Paso 2, lo respetamos; si no existe, igual carga
+      if (typeof isLoading === 'undefined' || !isLoading) {
+        load();
+      }
+    }
+
+    function setAuto(on){
+      const chk = document.getElementById('chkAuto'); // checkbox del header
+      if (!chk) return;
+      if (typeof on === 'boolean') chk.checked = on;
+
+      if (window.refreshTimer) { clearInterval(window.refreshTimer); window.refreshTimer = null; }
+      if (chk.checked){
+        // frecuencia de auto‑refresh (ms)
+        window.refreshTimer = setInterval(refreshNow, 10000);
+      }
+    }
+
+    // Botón "Actualizar" y checkbox "Auto"
+    document.getElementById('btnRefresh')?.addEventListener('click', refreshNow);
+    document.getElementById('chkAuto')?.addEventListener('change', () => setAuto());
+
+    // Carga inicial y Auto OFF por defecto
+    setAuto(false);
+    load(); // primera carga
+    </script>
+  <script>
+    (function enforceAuth(){
+    try {
+      const raw = sessionStorage.getItem('emberAuth');
+      const obj = raw ? JSON.parse(raw) : null;
+      if (!obj || !obj.until || Date.now() > obj.until) {
+        sessionStorage.removeItem('emberAuth');
+        if (!location.pathname.endsWith('/login.html')) location.href = '/login.html';
+      }
+    } catch(e){
+      if (!location.pathname.endsWith('/login.html')) location.href = '/login.html';
+    }
+  })();
+  // (Opcional) función para “Cerrar sesión”
+  function emberLogout(){
+    sessionStorage.removeItem('emberAuth');
+    location.href = '/login.html';
+  }
+  </script>  
+  <!-- Footer -->
+    <footer class="pt-4 pb-8 text-center muted text-xs">
+      © <span id="y"></span> Emberlink. Todos los derechos reservados.
+    </footer>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Emberlink • Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Tailwind -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    :root{
+      --ember-blue:#0066CC; --ember-cyan:#00AEEF;
+      --bg:#121212; --card:#151515; --text:#FFFFFF; --muted:#C5CBD2; --border:#303030;
+    }
+    html,body{background:var(--bg);color:var(--text);}
+    .card{background:var(--card);border:1px solid var(--border);}
+    .muted{color:var(--muted);}
+    .btn{background:#0F172A;border:1px solid var(--border);color:var(--text);}
+    .btn:hover{background:#1F2937;}
+    .pill{border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.04)}
+    .tile:hover{transform:translateY(-2px); box-shadow:0 8px 30px rgba(0,0,0,.35);}
+    .grad { background: radial-gradient(1200px 600px at 20% -10%, rgba(0,174,239,.15), transparent 60%),
+                         radial-gradient(1000px 500px at 110% 10%, rgba(0,102,204,.12), transparent 60%); }
+  </style>
+</head>
+<body class="min-h-screen grad">
+  <div class="max-w-7xl mx-auto px-5 py-6 space-y-8">
+
+    <!-- Topbar -->
+    <header class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="/brand/logo-emberlink.png" alt="Emberlink" width="168" height="56" class="h-10 w-auto"/>
+        <span class="hidden sm:inline text-sm px-2 py-1 rounded pill muted">suite • macro & finanzas</span>
+      </div>
+      <nav class="flex items-center gap-2">
+        <a href="/lecaps.html" class="btn px-3 py-2 rounded-xl">Ir a Lecaps/Boncaps</a>
+      </nav>
+    </header>
+
+    <!-- Hero -->
+    <section class="text-center pt-6">
+      <img src="/brand/logo-emberlink.png" alt="Emberlink" width="480" height="160"
+           class="mx-auto w-auto" style="height:90px"/>
+      <h1 class="text-3xl md:text-4xl font-semibold mt-4">Panel Emberlink</h1>
+      <p class="muted mt-2">Indicadores macroeconómicos y tableros de finanzas locales.</p>
+    </section>
+
+    <!-- Secciones -->
+    <section class="grid lg:grid-cols-2 gap-6">
+
+      <!-- Macroeconomía -->
+      <div class="card rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-xl font-semibold">Macroeconomía</h2>
+          <span class="text-xs px-2 py-1 rounded pill muted">próximamente</span>
+        </div>
+        <p class="muted mb-4">Tableros de actividad, inflación, sector externo y fiscal.</p>
+
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div class="tile card rounded-xl p-4 transition">
+            <div class="text-sm font-medium">Inflación</div>
+            <div class="muted text-xs">IPC, núcleo, rubros</div>
+          </div>
+          <div class="tile card rounded-xl p-4 transition">
+            <div class="text-sm font-medium">Actividad</div>
+            <div class="muted text-xs">EMAE, industria, construcción</div>
+          </div>
+          <div class="tile card rounded-xl p-4 transition">
+            <div class="text-sm font-medium">Sector externo</div>
+            <div class="muted text-xs">Balanza comercial, reservas</div>
+          </div>
+          <div class="tile card rounded-xl p-4 transition">
+            <div class="text-sm font-medium">Fiscal</div>
+            <div class="muted text-xs">Resultado primario/financiero</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Finanzas -->
+      <div class="card rounded-2xl p-5">
+        <h2 class="text-xl font-semibold mb-1">Finanzas</h2>
+        <p class="muted mb-4">Renta fija en pesos y en dólar. Entrá por categoría.</p>
+
+        <!-- Tabs (simples visuales) -->
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <div class="text-center py-2 rounded-xl pill">Renta fija <b>pesos</b></div>
+          <div class="text-center py-2 rounded-xl border border-transparent muted">Renta fija dólar</div>
+        </div>
+
+        <!-- Renta fija PESOS: 5 categorías -->
+        <div class="grid sm:grid-cols-2 gap-3">
+          <!-- (i) Lecaps / Boncaps -->
+          <a href="/lecaps.html" class="tile card rounded-xl p-4 transition block">
+            <div class="text-sm font-semibold">Lecaps / Boncaps</div>
+            <div class="muted text-xs">TEM • TNA • TEA • curva e interpolación</div>
+          </a>
+
+          <!-- (ii) Bonos CER -->
+          <a href="/cer.html" class="tile card rounded-xl p-4 transition block">
+            <div class="text-sm font-semibold">Bonos CER</div>
+            <div class="muted text-xs">UVAs / duration / break-even</div>
+          </a>
+
+          <!-- (iii) Bonos duales (fija/TAMAR) -->
+          <a href="/duales.html" class="tile card rounded-xl p-4 transition block">
+            <div class="text-sm font-semibold">Bonos duales</div>
+            <div class="muted text-xs">tasa fija / TAMAR • escenarios</div>
+          </a>
+
+          <!-- (iv) Tasa variable (TAMAR) -->
+          <a href="/tamar-var.html" class="tile card rounded-xl p-4 transition block">
+            <div class="text-sm font-semibold">Tasa variable (TAMAR)</div>
+            <div class="muted text-xs">floating • margenes • resets</div>
+          </a>
+
+          <!-- (v) Dólar linked -->
+          <a href="/dolar-linked.html" class="tile card rounded-xl p-4 transition block sm:col-span-2">
+            <div class="text-sm font-semibold">Dólar linked</div>
+            <div class="muted text-xs">paridades • carry vs. deval</div>
+          </a>
+        </div>
+
+        <!-- Renta fija DÓLAR (placeholders) -->
+        <div class="mt-6">
+          <div class="text-sm font-medium mb-2">Renta fija <b>dólar</b> (placeholder)</div>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <a href="/al30.html" class="tile card rounded-xl p-4 transition block">
+              <div class="text-sm font-semibold">Soberanos hard</div>
+              <div class="muted text-xs">AL/GL • paridades • curvas</div>
+            </a>
+            <a href="/corporativos.html" class="tile card rounded-xl p-4 transition block">
+              <div class="text-sm font-semibold">Corporativos</div>
+              <div class="muted text-xs">ONs • spreads • duration</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="pt-4 pb-8 text-center muted text-xs">
+      © <span id="y"></span> Emberlink. Todos los derechos reservados.
+    </footer>
+  </div>
+
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+  </script>
+<script>
+  (function enforceAuth(){
+    try {
+      const raw = sessionStorage.getItem('emberAuth');
+      const obj = raw ? JSON.parse(raw) : null;
+      if (!obj || !obj.until || Date.now() > obj.until) {
+        sessionStorage.removeItem('emberAuth');
+        if (!location.pathname.endsWith('/login.html')) location.href = '/login.html';
+      }
+    } catch(e){
+      if (!location.pathname.endsWith('/login.html')) location.href = '/login.html';
+    }
+  })();
+
+  // (Opcional) función para “Cerrar sesión”
+  function emberLogout(){
+    sessionStorage.removeItem('emberAuth');
+    location.href = '/login.html';
+  }
+</script>
+</body>
+</html>
