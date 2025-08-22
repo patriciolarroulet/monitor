@@ -13,10 +13,10 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ============== CONFIG ==============
-BACKEND_INGEST_URL   = "http://127.0.0.1:8080/api/ingest/prices"
-BACKEND_TICKERS_URL  = "http://127.0.0.1:8080/api/lecaps/tickers"
-PERIOD_SECONDS       = 5
-GUARDAR_EXCEL        = True
+BACKEND_INGEST_URL  = "https://monitor-production-da5e.up.railway.app/api/ingest/prices"
+BACKEND_TICKERS_URL = "https://monitor-production-da5e.up.railway.app/api/lecaps/tickers"
+PERIOD_SECONDS       = 10
+GUARDAR_EXCEL        = False
 
 # Freezer
 FREEZE_AFTER_1705    = True
@@ -480,7 +480,7 @@ def build_payload(rows):
 
 def post_to_backend(payload):
     r = requests.post(BACKEND_INGEST_URL, json=payload, timeout=10)
-    print("POST /api/ingest/prices ->", r.status_code, r.text)
+    print(f"POST {BACKEND_INGEST_URL} -> {r.status_code} {r.text[:300]}")
     r.raise_for_status()
 
 # ============== (OPCIONAL) GUARDAR EXCEL ==============
@@ -519,6 +519,7 @@ while True:
             frozen_out["last_update"] = now_local().isoformat()
             write_atomic_json(frozen_out, FX_JSON)
             print(f"🧊 Freeze activo: fx.json congelado | market_date={frozen_out.get('market_date')}")
+            time.sleep(300)
         else:
             # === REEMPLAZÁ ESTAS 3 LÍNEAS CON TU CÁLCULO REAL ===
             fx_payload = compute_fx_from_bonds(dataframes, resultados_bcra)  # ← tu función real
