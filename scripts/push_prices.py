@@ -515,7 +515,7 @@ while True:
             # mantener último valor y actualizar metadatos
             frozen_out = dict(prev_fx or {})
             frozen_out["frozen"] = True
-            frozen_out["market_date"] = market_date().isoformat()   # último hábil
+            frozen_out["market_date"] = market_date().isoformat()   # último día hábil
             frozen_out["last_update"] = now_local().isoformat()
             write_atomic_json(frozen_out, FX_JSON)
             print(f"🧊 Freeze activo: fx.json congelado | market_date={frozen_out.get('market_date')}")
