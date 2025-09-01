@@ -1,1 +1,27 @@
-{"mep":1331.15,"ccl":1330.7,"oficial":null,"ts_utc":"2025-08-22T20:19:58.499477+00:00","sources":{"mep":"MEP = close(AL30)/close(AL30D)","ccl":"CCL = close(AL30)/close(AL30C)","oficial":"BCRA A3500"},"mep_var_pct":0.0,"ccl_var_pct":0.0,"oficial_var_pct":0.0,"frozen":false,"market_date":"2025-08-22","last_update":"2025-08-22T17:19:58.500489-03:00"}
+{
+  "mep": {
+    "value": 1374.59,
+    "prev": 1357.26,
+    "chg": 17.33,
+    "chg_pct": 1.28,
+    "date": null
+  },
+  "ccl": {
+    "value": 1375.78,
+    "prev": 1359.12,
+    "chg": 16.66,
+    "chg_pct": 1.23,
+    "date": null
+  },
+  "a3500": {
+    "value": 1323.83,
+    "prev": 1343.67,
+    "chg": -19.84,
+    "chg_pct": -1.48,
+    "date": "2025-08-29"
+  },
+  "_timestamp": "2025-09-01T12:26:17.703316-03:00",
+  "frozen": false,
+  "market_date": "2025-09-01",
+  "last_update": "2025-09-01T12:26:17.703316-03:00"
+}

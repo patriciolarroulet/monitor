@@ -11,10 +11,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+import java.nio.file.*;
 import java.time.Duration;
+import java.io.File;
 
 /**
  * Lee el archivo fx.json generado por el script de Python y lo expone vía REST.
@@ -32,16 +33,53 @@ public class FxController {
     @Value("${monitor.fx.json-path:output/fx.json}")
     private String fxJsonPath;
 
+    /* Normaliza la ruta:
+       - "file:C:\...\fx.json" -> Path OK
+       - "C:\...\fx.json"      -> Path OK
+       - "output/fx.json"      -> ${user.dir}/output/fx.json
+    */
+private static Path toPath(String p) {
+    if (p == null || p.isBlank()) return null;
+
+    // Soporta "file:" a lo Windows (file:C:\...),
+    // "file:///" estándar (file:///C:/...),
+    // absoluta (C:\... o /...),
+    // y relativa (output/fx.json).
+    if (p.startsWith("file:")) {
+        String s = p.substring(5);              // quita "file:"
+        s = s.replace('\\', '/');               // normaliza separadores
+        // si viene "///C:/..." o similar, limpia los prefijos
+        if (s.startsWith("///")) s = s.substring(3);
+        else if (s.startsWith("//")) s = s.substring(2);
+        else if (s.startsWith("/")) s = s.substring(1);
+        // ahora debería quedar "C:/Users/.../fx.json" o "/path/unix"
+        // devolvemos un Path nativo
+        return Paths.get(s.replace('/', File.separatorChar));
+    }
+
+    Path cand = Paths.get(p);
+    if (cand.isAbsolute()) return cand;
+    return Paths.get(System.getProperty("user.dir")).resolve(cand).normalize();
+}
+
+    private static boolean isEmptyFile(Path path) {
+        try {
+            return !Files.exists(path) || Files.size(path) == 0;
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
     /** Endpoint crudo para diagnóstico: devuelve el contenido literal de fx.json (validado). */
     @GetMapping(path = "/raw", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> raw() {
         try {
-            File f = new File(fxJsonPath);
-            if (!f.exists()) {
-                log.warn("fx.json no existe en ruta: {}", f.getAbsolutePath());
+            Path path = toPath(fxJsonPath);
+            if (path == null || isEmptyFile(path)) {
+                log.warn("fx.json no existe o está vacío: {}", (path != null ? path.toString() : fxJsonPath));
                 return ResponseEntity.notFound().build();
             }
-            String raw = Files.readString(f.toPath(), StandardCharsets.UTF_8);
+            String raw = Files.readString(path, StandardCharsets.UTF_8);
             JsonNode node = mapper.readTree(raw); // valida que sea JSON
             return ResponseEntity.ok()
                     .cacheControl(CacheControl.maxAge(Duration.ofSeconds(5)).mustRevalidate())
@@ -77,14 +115,16 @@ public class FxController {
 
     /** Reintenta leer el archivo para evitar fallas durante el replace atómico. */
     private FxRates tryReadFxWithRetry(int attempts, long sleepMs) {
-        File f = new File(fxJsonPath);
-        if (!f.exists() || f.length() == 0) {
-            log.warn("fx.json no existe o está vacío: {}", f.getAbsolutePath());
+        Path path = toPath(fxJsonPath);
+        if (path == null || isEmptyFile(path)) {
+            log.warn("fx.json no existe o está vacío: {}", (path != null ? path.toString() : fxJsonPath));
             return null;
         }
         for (int i = 0; i < attempts; i++) {
             try {
-                return mapper.readValue(f, FxRates.class);
+                // leer como texto para evitar lock mientras Python reemplaza el archivo
+                String raw = Files.readString(path, StandardCharsets.UTF_8);
+                return mapper.readValue(raw, FxRates.class);
             } catch (Exception e) {
                 log.warn("Intento {}/{} leyendo fx.json falló: {}",
                         i + 1, attempts, e.getClass().getSimpleName());

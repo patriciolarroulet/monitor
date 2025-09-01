@@ -1,0 +1,36 @@
+{
+  "asOf": "2025-09-01T15:26:18.509640+00:00",
+  "fuente": "dalfie.ar/ccl (scrape)",
+  "mercado": "BYMA",
+  "moneda": "ARS",
+  "quotes": [
+    {
+      "plazoDias": 1,
+      "tna": 0.433
+    },
+    {
+      "plazoDias": 7,
+      "tna": 0.4351
+    },
+    {
+      "plazoDias": 14,
+      "tna": 0.4411
+    },
+    {
+      "plazoDias": 21,
+      "tna": 0.4201
+    },
+    {
+      "plazoDias": 28,
+      "tna": 0.4571
+    },
+    {
+      "plazoDias": 35,
+      "tna": 0.45
+    },
+    {
+      "plazoDias": 53,
+      "tna": 0.4
+    }
+  ]
+}

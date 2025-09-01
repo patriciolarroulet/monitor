@@ -1,0 +1,247 @@
+{
+  "asOf": "2025-09-01T15:26:18.026680+00:00",
+  "source": "dalfie.ar/ccl (scrape)",
+  "spotFrom": "SEP25",
+  "curva": [
+    {
+      "mes": "SPOT(calc:SEP25)",
+      "rofex": 1374.3950083216146,
+      "tna": null,
+      "tir": null,
+      "pase": null,
+      "vencimiento": null,
+      "days_to_mat": null,
+      "spot_est": 1374.3950083216146
+    },
+    {
+      "mes": "SEP25",
+      "rofex": 1419.5,
+      "tna": 40.73,
+      "tir": 49.31,
+      "pase": 49.31,
+      "vencimiento": "2025-09-30",
+      "days_to_mat": 29,
+      "spot_est": 1374.3950083216146
+    },
+    {
+      "mes": "OCT25",
+      "rofex": 1479.0,
+      "tna": 46.01,
+      "tir": 55.82,
+      "pase": 62.17,
+      "vencimiento": "2025-10-31",
+      "days_to_mat": 60,
+      "spot_est": 1373.6127310074576
+    },
+    {
+      "mes": "NOV25",
+      "rofex": 1513.0,
+      "tna": 41.63,
+      "tir": 48.69,
+      "pase": 34.48,
+      "vencimiento": "2025-11-28",
+      "days_to_mat": 88,
+      "spot_est": 1373.1741162260616
+    },
+    {
+      "mes": "DIC25",
+      "rofex": 1545.0,
+      "tna": 37.61,
+      "tir": 42.56,
+      "pase": 26.96,
+      "vencimiento": "2025-12-31",
+      "days_to_mat": 121,
+      "spot_est": 1371.4126470615204
+    },
+    {
+      "mes": "ENE26",
+      "rofex": 1572.5,
+      "tna": 34.72,
+      "tir": 38.32,
+      "pase": 23.09,
+      "vencimiento": "2026-01-30",
+      "days_to_mat": 151,
+      "spot_est": 1372.4522130708813
+    },
+    {
+      "mes": "FEB26",
+      "rofex": 1597.0,
+      "tna": 32.92,
+      "tir": 35.69,
+      "pase": 22.33,
+      "vencimiento": "2026-02-27",
+      "days_to_mat": 179,
+      "spot_est": 1372.142396407748
+    },
+    {
+      "mes": "MAR26",
+      "rofex": 1627.0,
+      "tna": 31.7,
+      "tir": 33.79,
+      "pase": 23.65,
+      "vencimiento": "2026-03-31",
+      "days_to_mat": 211,
+      "spot_est": 1371.7950922053326
+    },
+    {
+      "mes": "ABR26",
+      "rofex": 1666.0,
+      "tna": 32.05,
+      "tir": 33.74,
+      "pase": 33.4,
+      "vencimiento": "2026-04-30",
+      "days_to_mat": 241,
+      "spot_est": 1371.355518798029
+    },
+    {
+      "mes": "MAY26",
+      "rofex": 1695.0,
+      "tna": 31.46,
+      "tir": 32.69,
+      "pase": 24.26,
+      "vencimiento": "2026-05-29",
+      "days_to_mat": 270,
+      "spot_est": 1371.0113715763948
+    },
+    {
+      "mes": "JUN26",
+      "rofex": 1734.0,
+      "tna": 31.56,
+      "tir": 32.36,
+      "pase": 29.62,
+      "vencimiento": "2026-06-30",
+      "days_to_mat": 302,
+      "spot_est": 1370.5936055347872
+    },
+    {
+      "mes": "JUL26",
+      "rofex": 1774.5,
+      "tna": 31.85,
+      "tir": 32.26,
+      "pase": 31.24,
+      "vencimiento": "2026-07-31",
+      "days_to_mat": 333,
+      "spot_est": 1370.1074385512813
+    },
+    {
+      "mes": "AGO26",
+      "rofex": 1804.5,
+      "tna": 31.32,
+      "tir": 31.33,
+      "pase": 21.82,
+      "vencimiento": "2026-08-31",
+      "days_to_mat": 364,
+      "spot_est": 1369.8650554820942
+    }
+  ],
+  "vencimientos": [
+    {
+      "mes": "SEP25",
+      "vencimiento": "2025-09-30",
+      "days_to_mat": 29,
+      "rofex": 1419.5,
+      "tna": 40.73,
+      "tir": 49.31,
+      "pase": 49.31
+    },
+    {
+      "mes": "OCT25",
+      "vencimiento": "2025-10-31",
+      "days_to_mat": 60,
+      "rofex": 1479.0,
+      "tna": 46.01,
+      "tir": 55.82,
+      "pase": 62.17
+    },
+    {
+      "mes": "NOV25",
+      "vencimiento": "2025-11-28",
+      "days_to_mat": 88,
+      "rofex": 1513.0,
+      "tna": 41.63,
+      "tir": 48.69,
+      "pase": 34.48
+    },
+    {
+      "mes": "DIC25",
+      "vencimiento": "2025-12-31",
+      "days_to_mat": 121,
+      "rofex": 1545.0,
+      "tna": 37.61,
+      "tir": 42.56,
+      "pase": 26.96
+    },
+    {
+      "mes": "ENE26",
+      "vencimiento": "2026-01-30",
+      "days_to_mat": 151,
+      "rofex": 1572.5,
+      "tna": 34.72,
+      "tir": 38.32,
+      "pase": 23.09
+    },
+    {
+      "mes": "FEB26",
+      "vencimiento": "2026-02-27",
+      "days_to_mat": 179,
+      "rofex": 1597.0,
+      "tna": 32.92,
+      "tir": 35.69,
+      "pase": 22.33
+    },
+    {
+      "mes": "MAR26",
+      "vencimiento": "2026-03-31",
+      "days_to_mat": 211,
+      "rofex": 1627.0,
+      "tna": 31.7,
+      "tir": 33.79,
+      "pase": 23.65
+    },
+    {
+      "mes": "ABR26",
+      "vencimiento": "2026-04-30",
+      "days_to_mat": 241,
+      "rofex": 1666.0,
+      "tna": 32.05,
+      "tir": 33.74,
+      "pase": 33.4
+    },
+    {
+      "mes": "MAY26",
+      "vencimiento": "2026-05-29",
+      "days_to_mat": 270,
+      "rofex": 1695.0,
+      "tna": 31.46,
+      "tir": 32.69,
+      "pase": 24.26
+    },
+    {
+      "mes": "JUN26",
+      "vencimiento": "2026-06-30",
+      "days_to_mat": 302,
+      "rofex": 1734.0,
+      "tna": 31.56,
+      "tir": 32.36,
+      "pase": 29.62
+    },
+    {
+      "mes": "JUL26",
+      "vencimiento": "2026-07-31",
+      "days_to_mat": 333,
+      "rofex": 1774.5,
+      "tna": 31.85,
+      "tir": 32.26,
+      "pase": 31.24
+    },
+    {
+      "mes": "AGO26",
+      "vencimiento": "2026-08-31",
+      "days_to_mat": 364,
+      "rofex": 1804.5,
+      "tna": 31.32,
+      "tir": 31.33,
+      "pase": 21.82
+    }
+  ]
+}

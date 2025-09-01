@@ -37,10 +37,28 @@
         <div>
           <label class="block text-sm mb-1 muted">Contraseña</label>
           <div class="relative">
-            <input id="pass" type="password" class="w-full rounded-xl p-3 pr-10" autocomplete="current-password" required>
-            <!-- Botón de mostrar/ocultar -->
-            <button type="button" id="togglePass" class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-white">
-              👁️
+            <input id="pass" type="password" class="w-full rounded-xl p-3 pr-12" autocomplete="current-password" required>
+            <!-- Botón mostrar/ocultar con SVGs -->
+            <button
+              type="button"
+              id="togglePass"
+              class="absolute inset-y-0 right-3 flex items-center justify-center w-8 h-8 my-auto text-gray-400 hover:text-white focus:outline-none"
+              aria-label="Mostrar contraseña"
+              aria-pressed="false"
+              title="Mostrar contraseña"
+            >
+              <!-- Ojo (visible por defecto cuando el campo está oculto) -->
+              <svg id="icon-eye" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <!-- Ojo tachado (se muestra cuando el campo está en texto) -->
+              <svg id="icon-eye-off" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a10.05 10.05 0 012.873-4.592M6.223 6.223A9.973 9.973 0 0112 5c4.477 0 8.268 2.943 9.542 7a10.05 10.05 0 01-3.249 4.503M3 3l18 18" />
+              </svg>
             </button>
           </div>
         </div>
@@ -58,18 +76,24 @@
     // Año en footer
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // Toggle mostrar/ocultar contraseña
+    // Toggle mostrar/ocultar contraseña con SVG
     const passInput = document.getElementById('pass');
     const toggleBtn = document.getElementById('togglePass');
+    const iconEye = document.getElementById('icon-eye');
+    const iconEyeOff = document.getElementById('icon-eye-off');
 
     toggleBtn.addEventListener('click', () => {
-      if (passInput.type === 'password') {
-        passInput.type = 'text';
-        toggleBtn.textContent = '🙈'; // cambia icono
-      } else {
-        passInput.type = 'password';
-        toggleBtn.textContent = '👁️';
-      }
+      const show = passInput.type === 'password';
+      passInput.type = show ? 'text' : 'password';
+
+      // Accesibilidad y título
+      toggleBtn.setAttribute('aria-pressed', String(show));
+      toggleBtn.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+      toggleBtn.setAttribute('title', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+
+      // Íconos
+      iconEye.classList.toggle('hidden', show);
+      iconEyeOff.classList.toggle('hidden', !show);
     });
 
     // Login simple en el cliente (NO apto producción)
@@ -84,7 +108,6 @@
       const u = document.getElementById('user').value.trim();
       const p = passInput.value;
       if (u === OK_USER && p === OK_PASS) {
-        
         // marcamos sesión en storage por 8 horas
         const until = Date.now() + 8*60*60*1000;
         sessionStorage.setItem('emberAuth', JSON.stringify({u, until}));

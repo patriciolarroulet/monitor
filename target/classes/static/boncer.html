@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Boncer • Emberlink</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- UI -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --ember-blue:   #0066CC;
+      --ember-cyan:   #00AEEF;
+      --ember-bg:     #121212;
+      --ember-text:   #FFFFFF;
+      --ember-muted:  #C5CBD2;
+      --ember-grid:   #2E2E2E;
+      --ember-card:   #151515;
+      --ember-border: #303030;
+    }
+    html, body { background: var(--ember-bg); color: var(--ember-text); }
+    .card { background: var(--ember-card); border: 1px solid var(--ember-border); }
+    .muted { color: var(--ember-muted); }
+    .btn { background: #0F172A; border: 1px solid var(--ember-border); color: var(--ember-text); }
+    .btn:hover { background: #1F2937; }
+    .btn-primary { background: var(--ember-blue); color: white; }
+    .btn-primary:hover { filter: brightness(1.05); }
+    input, select { background: #0b0b0b; color: var(--ember-text); border: 1px solid var(--ember-border); }
+    table th, table td { border-color: var(--ember-border); }
+    thead.sticky th { position: sticky; top: 0; background: #0d0d0d; z-index: 1; }
+  </style>
+</head>
+<body class="p-5">
+  <div class="max-w-7xl mx-auto space-y-5">
+    <!-- Header (idéntico) -->
+    <header class="flex items-center justify-between">
+      <h1 class="text-2xl md:text-3xl font-semibold">Boncer (CER)</h1>
+      <div class="flex items-center gap-3">
+        <img src="/brand/logo-emberlink.png" alt="Emberlink" class="w-auto" style="height:56px" width="168" height="56">
+        <div class="flex items-center gap-2">
+          <button id="btnRefresh" class="btn px-3 py-2 rounded-xl">Actualizar</button>
+          <label class="inline-flex items-center gap-2 text-sm">
+            <input id="chkAuto" type="checkbox" class="scale-125">
+            <span class="muted">Auto</span>
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <!-- Fechas (idéntico) -->
+    <section class="grid sm:grid-cols-3 gap-4">
+      <div class="card rounded-2xl p-4">
+        <div class="text-xs muted">Fecha</div>
+        <div id="fechaInput" class="text-xl font-semibold">—</div>
+      </div>
+
+      <div class="card rounded-2xl p-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs muted">Hora</span>
+          <span class="market-status text-xs muted flex items-center gap-2 whitespace-nowrap"
+                id="market-status" aria-live="polite" title="Estado de mercado">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="market-status-text">—</span>
+          </span>
+        </div>
+        <div id="horaInput" class="text-xl font-semibold mt-1">—</div>
+      </div>
+
+      <div class="card rounded-2xl p-4">
+        <div class="text-xs muted">Fecha de liquidación</div>
+        <div id="fechaLiq" class="text-xl font-semibold">—</div>
+      </div>
+    </section>
+
+    <!-- Filtros + export (igual UX) -->
+    <section class="grid md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm mb-1 muted">Filtrar por Ticker</label>
+        <input id="fTicker" type="text" placeholder="Ej: TX26" class="w-full rounded-xl p-2" />
+      </div>
+      <div>
+        <label class="block text-sm mb-1 muted">Mín. Días al Vto</label>
+        <input id="fMinDias" type="number" min="0" class="w-full rounded-xl p-2" />
+      </div>
+      <div class="flex items-end gap-2">
+        <button id="btnApply" class="px-4 py-2 rounded-2xl btn-primary">Aplicar</button>
+        <button id="btnClear" class="px-4 py-2 rounded-2xl btn">Limpiar</button>
+        <button id="btnCSV"  class="px-4 py-2 rounded-2xl btn" disabled>Exportar CSV</button>
+        <button id="btnXLS"  class="px-4 py-2 rounded-2xl btn" disabled>Exportar XLS</button>
+      </div>
+    </section>
+
+    <!-- Tabla BONCER -->
+    <section class="card rounded-2xl p-4">
+      <h2 class="text-xl font-semibold mb-3">Tabla BONCER (ajustados por CER)</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-black/40 sticky" id="thead"></thead>
+          <tbody id="tbody" class="divide-y divide-[var(--ember-border)]"></tbody>
+        </table>
+      </div>
+      <p class="mt-2 text-xs text-gray-400 italic">
+        Los valores se replican del backend. Asegurate de exponer la hoja <b>BONCER</b> en el servicio que alimenta <code>/api/boncer</code>.
+      </p>
+    </section>
+
+    <!-- Footer -->
+    <footer class="pt-4 pb-8 text-center muted text-xs">
+      © <span id="y"></span> Emberlink. Todos los derechos reservados.
+    </footer>
+  </div>
+
+<script>
+(function(){
+  // ===== Config =====
+  const API = '/api/boncer'; // ← endpoint del back para BONCER
+  let rows = [];
+  let keys = [];
+
+  // ===== Utils =====
+  const nf0 = new Intl.NumberFormat('es-AR',{maximumFractionDigits:0});
+  const nf2 = new Intl.NumberFormat('es-AR',{minimumFractionDigits:2, maximumFractionDigits:2});
+
+  function toDMY(iso){
+    if(!iso) return '';
+    const s = String(iso);
+    let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (m) return `${m[1]}/${m[2]}/${m[3]}`;
+    return s;
+  }
+  function formatARDateHMS(ts){
+    if(ts==null) return '—';
+    const d = new Date(Number(ts));
+    if (isNaN(d)) return '—';
+    const f = d.toLocaleDateString('es-AR');
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    const ss = String(d.getSeconds()).padStart(2,'0');
+    return `${f}, ${hh}:${mm}:${ss}`;
+  }
+  function isPctKey(k){ return /(tna|tea|tirea|tem|infl|cupon|cup[oó]n|yield)/i.test(k); }
+  function isMoneyKey(k){ return /(precio|paridad|flujo|capital|inter[eé]s|vr|valor|monto)/i.test(k); }
+  function isDateKey(k){ return /(fecha|venc|liquid)/i.test(k); }
+
+  function labelFor(k){
+    const map = {
+      ticker:'Ticker', isin:'ISIN', emisor:'Emisor', fecha:'Vencimiento', VR:'VR',
+      capital:'Capital', interes:'Interés', flujo:'Flujo', cer_inicial:'CER inicial',
+      cupon:'Cupón', precio_sucio:'Precio sucio', precio_limpio:'Precio limpio',
+      paridad:'Paridad', tna_real:'TNA real', tirea_real:'TIREA real',
+      tna:'TNA (%)', tirea:'TIREA (%)', tem:'TEM (%)'
+    };
+    return map[k] || k.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  }
+  function fmtCell(k,v){
+    if (v==null || v==='') return '—';
+    if (isDateKey(k)) return toDMY(v);
+    if (isPctKey(k))  { const x = Number(v); if (!isFinite(x)) return '—'; const cls = x>=0?'text-green-400':'text-red-400'; return `<span class="${cls}">${nf2.format(x*100)}%</span>`; }
+    if (isMoneyKey(k)){ const x = Number(v); return isFinite(x) ? nf2.format(x) : String(v); }
+    if (typeof v === 'number') return Number.isInteger(v) ? nf0.format(v) : nf2.format(v);
+    return String(v);
+  }
+
+  function inferKeys(data){
+    if (!data.length) return [];
+    const preferred = ['ticker','isin','emisor','fecha','VR','capital','interes','flujo','cer_inicial','cupon','precio_limpio','precio_sucio','paridad','tna_real','tirea_real','tem','tna','tirea'];
+    const present = new Set(Object.keys(data[0]));
+    const ordered = preferred.filter(k=>present.has(k));
+    Object.keys(data[0]).forEach(k=>{ if(!ordered.includes(k)) ordered.push(k); });
+    return ordered;
+  }
+
+  function buildHead(keys){
+    const thead = document.getElementById('thead');
+    const tr = document.createElement('tr');
+    tr.innerHTML = keys.map(k=>`<th class="border px-3 py-2 text-left">${labelFor(k)}</th>`).join('');
+    thead.innerHTML=''; thead.appendChild(tr);
+  }
+  function buildBody(data, keys){
+    const tb = document.getElementById('tbody');
+    const fr = document.createDocumentFragment();
+    data.forEach(r=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = keys.map(k=>`<td class="border px-3 py-2 ${/^(precio|paridad|flujo|capital|inter|vr|tna|tea|tem|tirea)/i.test(k)?'text-right':''}">${fmtCell(k, r[k])}</td>`).join('');
+      fr.appendChild(tr);
+    });
+    tb.innerHTML=''; tb.appendChild(fr);
+  }
+
+  function applyFilters(){
+    const t = document.getElementById('fTicker').value.trim().toUpperCase();
+    const md = Number(document.getElementById('fMinDias').value);
+    const out = rows.filter(r=>{
+      const okT = !t || String(r.ticker||'').toUpperCase().includes(t);
+      const dias = Number(r.dias ?? r.dias_al_vto ?? r.days ?? null);
+      const okD = !md || (isFinite(dias) && dias >= md);
+      return okT && okD;
+    });
+    buildBody(out, keys);
+  }
+  function clearFilters(){
+    document.getElementById('fTicker').value = '';
+    document.getElementById('fMinDias').value = '';
+    buildBody(rows, keys);
+  }
+
+  function toCSV(data, keys){
+    const sep = ';';
+    const head = keys.map(labelFor).join(sep);
+    const body = data.map(r => keys.map(k=>{
+      const v = r[k];
+      if (v==null) return '';
+      const s = (typeof v==='number')? String(v).replace('.',',') : String(v).replace(/[\r\n]+/g,' ').replace(/;/g,',');
+      return `"${s}"`;
+    }).join(sep)).join('\n');
+    return head+'\n'+body;
+  }
+  function download(name, mime, content){
+    const blob = new Blob([content], {type:mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
+  }
+
+  async function load(){
+    const b = document.getElementById('btnRefresh');
+    b.disabled = true;
+    try{
+      const res = await fetch(API, { cache:'no-store' });
+      const data = await res.json();
+
+      // Acepta: Array o {rows, updated_ts, liquidacion_ts, fecha, hora}
+      const arr = Array.isArray(data) ? data : (data.rows || []);
+      rows = arr || [];
+      keys = inferKeys(rows);
+      buildHead(keys);
+      buildBody(rows, keys);
+
+      // Cabeceras de fecha/hora/liquidación
+      const now = new Date();
+      const updatedTs = data.updated_ts ?? Date.now();
+      const liqTs     = data.liquidacion_ts ?? null;
+      document.getElementById('fechaInput').textContent = (data.fecha || now.toLocaleDateString('es-AR'));
+      document.getElementById('horaInput').textContent  = (data.hora  || now.toLocaleTimeString('es-AR', {hour12:false}));
+      document.getElementById('fechaLiq').textContent   = liqTs ? formatARDateHMS(liqTs).split(',')[0] : (data.fecha_liquidacion || toDMY(rows[0]?.fecha_liquidacion) || '—');
+
+      // Habilitar export
+      document.getElementById('btnCSV').disabled = rows.length===0;
+      document.getElementById('btnXLS').disabled = rows.length===0;
+
+    }catch(e){
+      console.error(e);
+      rows=[]; keys=[];
+      buildHead(keys); buildBody(rows, keys);
+      alert('No se pudieron cargar datos de BONCER.');
+    }finally{
+      b.disabled = false;
+    }
+  }
+
+  // Wireup
+  document.getElementById('btnRefresh').addEventListener('click', load);
+  document.getElementById('btnApply').addEventListener('click', applyFilters);
+  document.getElementById('btnClear').addEventListener('click', clearFilters);
+  document.getElementById('btnCSV').addEventListener('click', ()=> download('boncer.csv','text/csv;charset=utf-8','\uFEFF'+toCSV(rows,keys)));
+  document.getElementById('btnXLS').addEventListener('click', ()=> download('boncer.xls','application/vnd.ms-excel','\uFEFF'+toCSV(rows,keys)));
+
+  // Auto-refresh (como Lecaps)
+  const chkAuto = document.getElementById('chkAuto');
+  let tmr = null;
+  chkAuto.addEventListener('change',()=>{
+    if (chkAuto.checked){
+      tmr = setInterval(load, 60_000);
+    } else {
+      clearInterval(tmr); tmr = null;
+    }
+  });
+
+  // Footer año + primera carga
+  document.getElementById('y').textContent = new Date().getFullYear();
+  load();
+})();
+</script>
+</body>
+</html>
