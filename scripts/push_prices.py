@@ -41,6 +41,10 @@ import math
 import tempfile
 from bs4 import BeautifulSoup
 from pandas.tseries.offsets import BMonthEnd
+import re
+from bs4 import BeautifulSoup
+from datetime import datetime, timezone
+
 
 import warnings
 warnings.filterwarnings(
@@ -105,6 +109,11 @@ BCRA_LOOKBACK_DAYS = 120
 # --- CAUCIONES ---
 CAUCIONES_URL = "https://dalfie.ar/ccl/"
 CAUCIONES_JSON = os.path.join(OUTPUT_DIR, "cauciones.json")
+
+# === Backend cauciones ===
+BACKEND_CAU_URL = f"{BACKEND_BASE}/api/cauciones/ingest"  # cambia a /api/cauciones si tu endpoint es ese
+SEND_CAU_TO_BACKEND = True           # dejar True en prod
+WRITE_CAU_JSON_BACKUP = True         # opcional: seguir guardando output/cauciones.json
 
 
 # Feriados desde XLSX
@@ -603,10 +612,6 @@ def post_to_backend(payload):
     r.raise_for_status()
 
 # ================== CAUCIONES ================== #
-import re
-from bs4 import BeautifulSoup
-from datetime import datetime, timezone
-
 def _percent_to_decimal(s):
     if s is None:
         return None
@@ -683,6 +688,23 @@ def write_cauciones_json(quotes: list[dict], path: str = CAUCIONES_JSON):
     }
     write_atomic_json(clean_nans(payload), path)
     print(f"💾 cauciones.json actualizado ({len(quotes)} plazos).")
+
+def post_cauciones_to_api(quotes: list[dict]):
+    """
+    Publica cauciones al backend. 'quotes' viene de fetch_cauciones():
+    [{"plazoDias": int, "tna": frac(0..1)}, ...]
+    Mandamos el mismo modelo (plazoDias + tna en fracción) dentro de 'quotes'.
+    """
+    payload = {
+        "asOf": datetime.now(timezone.utc).isoformat(),
+        "fuente": "dalfie.ar/ccl (scrape)",
+        "mercado": "BYMA",
+        "moneda": "ARS",
+        "quotes": quotes,  # <-- fracción (0..1), como venías manejando internamente
+    }
+    r = requests.post(BACKEND_CAU_URL, json=payload, timeout=20)
+    print("POST /api/cauciones/ingest ->", r.status_code)
+    r.raise_for_status()
 
 
 # ================== FUTUROS (ROFEX) ==================
@@ -962,16 +984,22 @@ while True:
             except Exception as e:
                 print("⚠️ Error publicando al backend:", e)
 
-        # 7) CAUCIONES (opcional) — mensajes bajo DEBUG
+        # 7) CAUCIONES — scrape -> POST API (y opcionalmente backup local)
         if DEBUG:
-            print("===== CAUCIONES: scrape + write =====")
+            print("===== CAUCIONES: scrape =====")
         try:
             if frozen_now:
                 if DEBUG:
-                    print("🧊 Freeze activo: se mantiene cauciones.json previo (no se sobreescribe).")
+                    print("🧊 Freeze activo: no se postea cauciones.")
             else:
-                cauc = fetch_cauciones()
-                write_cauciones_json(cauc, CAUCIONES_JSON)
+                cauc = fetch_cauciones()  # [{'plazoDias': int, 'tna': frac}, ...]
+                if SEND_CAU_TO_BACKEND:
+                    try:
+                        post_cauciones_to_api(cauc)
+                    except Exception as e:
+                        print(f"⚠️ Error publicando CAUCIONES al backend: {e}")
+                if WRITE_CAU_JSON_BACKUP:
+                    write_cauciones_json(cauc, CAUCIONES_JSON)
         except Exception as e:
             print(f"⚠️ Error obteniendo/escribiendo CAUCIONES: {e}")
 
