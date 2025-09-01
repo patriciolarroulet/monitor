@@ -15,64 +15,73 @@ import java.util.concurrent.atomic.AtomicReference;
 public class CaucionesController {
 
   private final CaucionesProvider provider;
-
-  // cache en memoria del último payload ingerido
   private final AtomicReference<Map<String, Object>> last = new AtomicReference<>();
 
   public CaucionesController(CaucionesProvider provider) {
     this.provider = provider;
   }
 
-  // ======================= GET (para el FRONT) =======================
+  // ===== GET (para el FRONT) =====
   @GetMapping
   public Map<String, Object> list() {
-    // 1) Si hay algo en memoria (ingestado por el worker), devolverlo
+    // 1) si hay snapshot ingerido por el worker → devolverlo
     Map<String, Object> cached = last.get();
     if (cached != null) return cached;
 
-    // 2) Fallback a tu provider actual (lee archivo local del backend)
-    var res = provider.read();
+    // 2) fallback seguro (NO reventar si no hay archivo local)
+    return buildFromProviderSafe();
+  }
 
-    List<Map<String, Object>> rows = new ArrayList<>();
-    for (var q : res.quotes()) {
-      Map<String, Object> m = new LinkedHashMap<>();
-      m.put("plazo", q.getPlazoDias() + " días");
-      // devolvemos % con dos decimales (ej 40.15)
-      m.put("tna", q.getTna().multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP));
-      rows.add(m);
+  private Map<String, Object> buildFromProviderSafe() {
+    try {
+      var res = provider.read();
+      if (res == null || res.quotes() == null) return emptyPayload();
+      List<Map<String, Object>> rows = new ArrayList<>();
+      res.quotes().forEach(q -> {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("plazo", q.getPlazoDias() + " días");
+        m.put("tna", q.getTna()
+            .multiply(BigDecimal.valueOf(100))
+            .setScale(2, RoundingMode.HALF_UP));
+        rows.add(m);
+      });
+      Map<String, Object> out = new LinkedHashMap<>();
+      out.put("asOf", res.asOf());
+      out.put("data", rows);
+      // cachear para próximas lecturas
+      last.set(out);
+      return out;
+    } catch (Exception e) {
+      // sin archivo o cualquier error → 200 con payload vacío
+      return emptyPayload();
     }
+  }
 
+  private Map<String, Object> emptyPayload() {
     Map<String, Object> out = new LinkedHashMap<>();
-    out.put("asOf", res.asOf());
-    out.put("data", rows);
-
-    // guardo por conveniencia en cache
-    last.set(out);
+    out.put("asOf", Instant.now());
+    out.put("data", List.of());
     return out;
   }
 
-  // ======================= POST (desde el WORKER) =======================
+  // ===== POST (desde el WORKER) =====
   @PostMapping("/ingest")
   public ResponseEntity<Void> ingest(@RequestBody CaucionesPayload payload) {
     if (payload == null || payload.data == null) return ResponseEntity.badRequest().build();
 
-    // normalizo a la misma estructura que usa el GET
     List<Map<String, Object>> rows = new ArrayList<>();
     for (CaucionRow r : payload.data) {
       if (r == null) continue;
-
-      String plazo = (r.plazo == null ? "" : r.plazo.trim());
-      // Si llega tna en fracción (0.4015) lo paso a %; si ya viene en % (40.15) lo dejo
-      BigDecimal tna = r.tna == null ? null : r.tna;
+      BigDecimal tna = r.tna;
       if (tna != null) {
+        // si viene fracción (0.4015) → pasar a %
         if (tna.compareTo(BigDecimal.ONE) <= 0) {
           tna = tna.multiply(BigDecimal.valueOf(100));
         }
         tna = tna.setScale(2, RoundingMode.HALF_UP);
       }
-
       Map<String, Object> m = new LinkedHashMap<>();
-      m.put("plazo", plazo);
+      m.put("plazo", (r.plazo == null ? "" : r.plazo.trim()));
       m.put("tna", tna);
       rows.add(m);
     }
@@ -81,17 +90,18 @@ public class CaucionesController {
     out.put("asOf", payload.asOf == null ? Instant.now() : payload.asOf);
     out.put("data", rows);
 
-    last.set(out); // ✅ queda listo para el GET
+    // ✅ queda en memoria para el GET
+    last.set(out);
     return ResponseEntity.ok().build();
   }
 
-  // ======= DTOs simples para deserializar el POST =======
+  // ===== DTOs del POST =====
   public static class CaucionesPayload {
     public Instant asOf;
     public List<CaucionRow> data;
   }
   public static class CaucionRow {
-    public String plazo;       // ej: "7 días", "30 días"
-    public BigDecimal tna;     // puede venir 40.15  (porcentaje) ó 0.4015 (fracción)
+    public String plazo;     // ej: "7 días"
+    public BigDecimal tna;   // ej: 39.80  ó 0.3980
   }
 }
