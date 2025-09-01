@@ -5,6 +5,9 @@ import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+
+import ar.monitor.model.FuturoDto;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class FuturosService {
@@ -48,7 +51,7 @@ public class FuturosService {
     catch (Exception e) { return true; }
   }
 
-  /** Lee el JSON y devuelve Map; si falla, devuelve null (NUNCA lanza excepción). */
+  /** Lee el JSON crudo a Map; si falla, devuelve null (no lanza excepción). */
   public Map<String, Object> readAsMap() {
     try {
       Path path = toPath(jsonPath);
@@ -56,8 +59,6 @@ public class FuturosService {
         log.warn("[/api/futuros] futuros.json no existe o está vacío: {}", (path != null ? path.toString() : jsonPath));
         return null;
       }
-
-      // pequeño retry por si pescamos el archivo durante el replace atómico
       for (int i = 0; i < 3; i++) {
         try {
           String raw = Files.readString(path, StandardCharsets.UTF_8);
@@ -65,7 +66,7 @@ public class FuturosService {
         } catch (Exception parse) {
           if (i == 2) {
             log.warn("[/api/futuros] No pude parsear futuros.json (intentos agotados): {}", parse.toString());
-            return null; // no reventamos el endpoint
+            return null;
           }
           try { Thread.sleep(150L); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
         }
@@ -73,11 +74,60 @@ public class FuturosService {
       return null;
     } catch (Exception e) {
       log.error("[/api/futuros] Error leyendo archivo: {}", e.toString(), e);
-      return null; // sin excepciones hacia arriba
+      return null;
     }
   }
-  /** Compat: mantiene la firma esperada por el Controller */
-  public Map<String, Object> fetchFuturos() {
+
+  /** Contrato usado por el Controller: parsea a List<FuturoDto>. */
+  public List<FuturoDto> fetchFuturos() {
+    try {
+      Path path = toPath(jsonPath);
+      if (path == null || isEmptyFile(path)) {
+        log.warn("[/api/futuros] futuros.json no existe o está vacío: {}", (path != null ? path.toString() : jsonPath));
+        return Collections.emptyList();
+      }
+
+      String raw = null;
+      for (int i = 0; i < 3; i++) {
+        try {
+          raw = Files.readString(path, StandardCharsets.UTF_8);
+          break;
+        } catch (Exception e) {
+          if (i == 2) {
+            log.warn("[/api/futuros] No pude leer futuros.json (intentos agotados): {}", e.toString());
+            return Collections.emptyList();
+          }
+          try { Thread.sleep(150L); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
+        }
+      }
+      if (raw == null) return Collections.emptyList();
+
+      // 1) Raíz como array: [ {...}, {...} ]
+      try {
+        return mapper.readValue(raw, new TypeReference<List<FuturoDto>>() {});
+      } catch (Exception ignore) {
+        // 2) Raíz como objeto con una clave lista: { "futuros": [ ... ] } o { "data": [ ... ] }
+        try {
+          Map<String, Object> obj = mapper.readValue(raw, new TypeReference<Map<String, Object>>() {});
+          Object items = Optional.ofNullable(obj.get("futuros")).orElse(obj.get("data")); // ajustá la clave si es otra
+          if (items == null) {
+            log.warn("[/api/futuros] JSON no contiene clave 'futuros' ni 'data'. Devolviendo lista vacía.");
+            return Collections.emptyList();
+          }
+          return mapper.convertValue(items, new TypeReference<List<FuturoDto>>() {});
+        } catch (Exception parse2) {
+          log.warn("[/api/futuros] No pude parsear a List<FuturoDto]: {}", parse2.toString());
+          return Collections.emptyList();
+        }
+      }
+    } catch (Exception e) {
+      log.error("[/api/futuros] Error general: {}", e.toString(), e);
+      return Collections.emptyList();
+    }
+  }
+
+  /** Si alguna vez querés el JSON crudo por código, usá este nombre distinto. */
+  public Map<String, Object> fetchFuturosRaw() {
     return readAsMap();
   }
 }
