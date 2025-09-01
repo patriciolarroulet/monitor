@@ -76,4 +76,8 @@ public class FuturosService {
       return null; // sin excepciones hacia arriba
     }
   }
+  /** Compat: mantiene la firma esperada por el Controller */
+  public Map<String, Object> fetchFuturos() {
+    return readAsMap();
+  }
 }
