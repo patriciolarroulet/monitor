@@ -16,6 +16,14 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ar.monitor.web.CaucionesIngestPayload;
+import ar.monitor.web.CaucionQuotePost;
+import ar.monitor.model.CaucionDto;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.math.RoundingMode;
+
 @Service
 public class CaucionesService {
 
@@ -162,5 +170,42 @@ public class CaucionesService {
                 new CaucionDto("35 días", new BigDecimal("35.00")),
                 new CaucionDto("42 días", new BigDecimal("32.83"))
         );
+    }
+
+    /** Cache en memoria con lo que postea el worker */
+    public static final class Cache {
+        public final Instant asOf;
+        public final List<CaucionDto> rows;
+        public Cache(Instant asOf, List<CaucionDto> rows) {
+            this.asOf = asOf;
+            this.rows = rows;
+        }
+    }
+    private final AtomicReference<Cache> cache = new AtomicReference<>();
+
+    /** Invocado por el POST /api/cauciones/ingest */
+    public void updateFromWorker(CaucionesIngestPayload payload) {
+        if (payload == null || payload.quotes() == null) {
+            cache.set(null);
+            return;
+        }
+        // convertir fracción -> % y armar "N días"
+        List<CaucionDto> rows = payload.quotes().stream()
+            .filter(Objects::nonNull)
+            .filter(q -> q.plazoDias() != null && q.tna() != null)
+            .sorted(Comparator.comparing(CaucionQuotePost::plazoDias))
+            .map(q -> {
+                var pct = q.tna().multiply(BigDecimal.valueOf(100))
+                                 .setScale(2, RoundingMode.HALF_UP);
+                return new CaucionDto(q.plazoDias() + " días", pct);
+            })
+            .collect(Collectors.toList());
+
+        cache.set(new Cache(payload.asOf() != null ? payload.asOf() : Instant.now(), rows));
+    }
+
+    /** Última cache posteada por el worker (si existe) */
+    public Optional<Cache> latestFromWorker() {
+        return Optional.ofNullable(cache.get());
     }
 }

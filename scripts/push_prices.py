@@ -689,20 +689,23 @@ def write_cauciones_json(quotes: list[dict], path: str = CAUCIONES_JSON):
     write_atomic_json(clean_nans(payload), path)
     print(f"💾 cauciones.json actualizado ({len(quotes)} plazos).")
 
-def post_cauciones_to_api(quotes: list[dict]):
+def post_cauciones_to_backend(quotes):
     """
-    Publica cauciones al backend. 'quotes' viene de fetch_cauciones():
-    [{"plazoDias": int, "tna": frac(0..1)}, ...]
-    Mandamos el mismo modelo (plazoDias + tna en fracción) dentro de 'quotes'.
+    quotes: [{'plazoDias': int, 'tna': float(fracción)}, ...]
     """
+    rows = []
+    for q in quotes:
+        d = q.get("plazoDias")
+        tna = q.get("tna")
+        if d is None or tna is None:
+            continue
+        rows.append({"plazo": f"{int(d)} días", "tna": float(tna)})
+
     payload = {
         "asOf": datetime.now(timezone.utc).isoformat(),
-        "fuente": "dalfie.ar/ccl (scrape)",
-        "mercado": "BYMA",
-        "moneda": "ARS",
-        "quotes": quotes,  # <-- fracción (0..1), como venías manejando internamente
+        "data": rows,
     }
-    r = requests.post(BACKEND_CAU_URL, json=payload, timeout=20)
+    r = requests.post(BACKEND_CAU_URL, json=payload, timeout=10)
     print("POST /api/cauciones/ingest ->", r.status_code)
     r.raise_for_status()
 
@@ -987,21 +990,20 @@ while True:
         # 7) CAUCIONES — scrape -> POST API (y opcionalmente backup local)
         if DEBUG:
             print("===== CAUCIONES: scrape =====")
-        try:
-            if frozen_now:
-                if DEBUG:
-                    print("🧊 Freeze activo: no se postea cauciones.")
-            else:
-                cauc = fetch_cauciones()  # [{'plazoDias': int, 'tna': frac}, ...]
-                if SEND_CAU_TO_BACKEND:
+            # 7) CAUCIONES
+            try:
+                if frozen_now:
+                    if DEBUG:
+                        print("🧊 Freeze activo: se mantiene cauciones.json previo (no se sobreescribe).")
+                else:
+                    cauc = fetch_cauciones()                 # [{'plazoDias':..,'tna':..}, ...]
+                    write_cauciones_json(cauc, CAUCIONES_JSON)
                     try:
-                        post_cauciones_to_api(cauc)
+                        post_cauciones_to_backend(cauc)      # <<<<<< agrega esta línea
                     except Exception as e:
                         print(f"⚠️ Error publicando CAUCIONES al backend: {e}")
-                if WRITE_CAU_JSON_BACKUP:
-                    write_cauciones_json(cauc, CAUCIONES_JSON)
-        except Exception as e:
-            print(f"⚠️ Error obteniendo/escribiendo CAUCIONES: {e}")
+            except Exception as e:
+                print(f"⚠️ Error obteniendo/escribiendo CAUCIONES: {e}")
 
         # 8) Excel opcional
         if GUARDAR_EXCEL:
