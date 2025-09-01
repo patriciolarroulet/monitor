@@ -52,8 +52,20 @@ warnings.filterwarnings(
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ================== CONFIG ==================
-BACKEND_INGEST_URL   = "http://127.0.0.1:8080/api/ingest/prices"
-BACKEND_TICKERS_URL  = "http://127.0.0.1:8080/api/lecaps/tickers"
+BACKEND_BASE = (
+    os.getenv("BACKEND_BASE")
+    or os.getenv("API_BASE")            # por si ya lo usás en otro lado
+    or os.getenv("MONITOR_API_BASE")    # alias
+    or ("http://127.0.0.1:8080" if os.getenv("ENV", "dev").lower() in ("dev","local") 
+        else "https://monitor-production-da5e.up.railway.app")
+)
+BACKEND_BASE = BACKEND_BASE.rstrip("/")
+
+BACKEND_INGEST_URL  = f"{BACKEND_BASE}/api/ingest/prices"
+BACKEND_TICKERS_URL = f"{BACKEND_BASE}/api/lecaps/tickers"
+
+print(f"[CFG] BACKEND_BASE={BACKEND_BASE}")
+
 SEND_TO_BACKEND      = True
 PERIOD_SECONDS       = 5
 GUARDAR_EXCEL        = False
