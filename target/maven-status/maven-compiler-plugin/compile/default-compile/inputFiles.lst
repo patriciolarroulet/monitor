@@ -6,6 +6,7 @@ C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\web\Cauciones
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\model\FuturoDto.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\model\BcraResponseDto.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\service\BoncerService.java
+C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\web\CaucionesIngestPayload.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\MonitorApplication.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\service\DolaresService.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\model\DolarQuoteDto.java
@@ -25,12 +26,16 @@ C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\service\Busin
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\model\CaucionDto.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\web\LecapsController.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\service\ExcelLecapsReader.java
+C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\web\CaucionesQuotePost.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\service\pricing\FxRates.java
+C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\web\CaucionQuotePost.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\HealthController.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\service\BcraSeriesService.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\service\pricing\PriceService.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\web\DebugController.java
+C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\model\CaucionesPayload.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\model\BoncerDto.java
+C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\service\pricing\CaucionesSnapshot.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\model\CaucionQuote.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\service\pricing\PriceQuote.java
 C:\Users\patri\OneDrive\Documents\monitor\src\main\java\ar\monitor\web\BcraController.java
